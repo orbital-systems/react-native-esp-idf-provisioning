@@ -8,43 +8,15 @@
 import Foundation
 import ESPProvision
 
-enum Transport: String {
-    case ble
-    case softap
-
-    func toESPTransport() -> ESPTransport {
-        switch self {
-        case .ble:
-            return ESPTransport.ble
-        case .softap:
-            return ESPTransport.softap
-        }
-    }
-}
-
-enum Security: String {
-    case secure
-    case unsecure
-
-    func toESPSecurity() -> ESPSecurity {
-        switch self {
-        case .secure:
-            return ESPSecurity.secure
-        case .unsecure:
-            return ESPSecurity.unsecure
-        }
-    }
-}
-
 @objc(EspIdfProvisioning)
 class EspIdfProvisioning: NSObject {
     var espDevice: ESPDevice?
 
     @objc(searchESPDevices:transport:security:resolve:reject:)
-    func searchESPDevices(devicePrefix: String, transport: String, security: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+    func searchESPDevices(devicePrefix: String, transport: String, security: Int, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
 
-        let transport = Transport(rawValue: transport)?.toESPTransport() ?? ESPTransport.ble
-        let security = Security(rawValue: security)?.toESPSecurity() ?? ESPSecurity.secure
+        let transport = ESPTransport(rawValue: transport) ?? ESPTransport.ble
+        let security = ESPSecurity(rawValue: security)
 
         ESPProvisionManager.shared.searchESPDevices(devicePrefix: devicePrefix, transport: transport, security: security) { espDevices, error in
             if error != nil {
@@ -63,7 +35,7 @@ class EspIdfProvisioning: NSObject {
 
     @objc(createESPDevice:transport:resolve:reject:)
     func createESPDevice(deviceName: String, transport: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
-        let transport = Transport(rawValue: transport)?.toESPTransport() ?? ESPTransport.ble
+        let transport = ESPTransport(rawValue: transport) ?? ESPTransport.ble
 
         ESPProvisionManager.shared.createESPDevice(deviceName: deviceName, transport: transport) { espDevice, error in
             if error != nil {
