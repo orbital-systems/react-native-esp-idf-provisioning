@@ -10,23 +10,47 @@ npm install react-native-esp-idf-provisioning
 
 ## Functions
 
-```js
+I deliberately skipped the scanQRCode functions for this first release but might want to add those as well for full public API compatibility.
+
+
+
+```ts
+// https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPProvisionManager.swift#L97
 searchESPDevices(
     devicePrefix: string,
     transport: Transport,
     security: Security
   ): Promise<any>;
+
+// https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPProvisionManager.swift#L123
 stopESPDevicesSearch(): void;
+
+// https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPProvisionManager.swift#L319
 createESPDevice(deviceName: string, transport: Transport): Promise<any>;
 
 // These methods require calling `createESPDevice`.
 // Might want to bridge the ESPDevice class instead of keeping it in global scope?
+
+// https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L164
 connect(): Promise<any>;
+
+// https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L249
+// Important: the bridge function takes data from react-native as a base64 encoded string, decodes it and sends it to the device
 sendData(path: string, data: string): Promise<any>;
+
+// https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L260
 isSessionEstablished(): boolean;
+
+// https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L76
 getProofOfPossession(): Promise<any>;
+
+// https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L407
 disconnect(): void;
+
+// https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L325
 provision(ssid: string, passphrase: string): Promise<any>;
+
+// https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L444
 initSession(sessionPath: string): Promise<any>;
 ```
 
