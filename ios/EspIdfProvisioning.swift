@@ -24,7 +24,15 @@ class EspIdfProvisioning: NSObject {
                 return
             }
 
-            resolve(espDevices)
+            resolve(espDevices!.map {[
+                "name": $0.name,
+                "advertisementData": $0.advertisementData ?? [],
+                "capabilities": $0.capabilities ?? [],
+                "security": $0.security.rawValue,
+                "transport": $0.transport.rawValue,
+                "username": $0.username as Any,
+                "versionInfo": $0.versionInfo ?? {}
+            ]})
         }
     }
 
@@ -33,11 +41,12 @@ class EspIdfProvisioning: NSObject {
         ESPProvisionManager.shared.stopESPDevicesSearch()
     }
 
-    @objc(createESPDevice:transport:resolve:reject:)
-    func createESPDevice(deviceName: String, transport: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+    @objc(createESPDevice:transport:security:proofOfPossession:softAPPassword:username:resolve:reject:)
+    func createESPDevice(deviceName: String, transport: String, security: Int, proofOfPossession:String? = nil, softAPPassword:String? = nil, username:String? = nil, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         let transport = ESPTransport(rawValue: transport) ?? ESPTransport.ble
+        let security = ESPSecurity(rawValue: security)
 
-        ESPProvisionManager.shared.createESPDevice(deviceName: deviceName, transport: transport) { espDevice, error in
+        ESPProvisionManager.shared.createESPDevice(deviceName: deviceName, transport: transport, security: security, proofOfPossession: proofOfPossession, softAPPassword: softAPPassword, username: username) { espDevice, error in
             if error != nil {
                 reject("error", error?.description, nil)
                 return
@@ -45,7 +54,15 @@ class EspIdfProvisioning: NSObject {
 
             self.espDevice = espDevice
 
-            resolve(espDevice)
+            resolve([
+                "name": espDevice!.name,
+                "advertisementData": espDevice!.advertisementData ?? [],
+                "capabilities": espDevice!.capabilities ?? [],
+                "security": espDevice!.security.rawValue,
+                "transport": espDevice!.transport.rawValue,
+                "username": espDevice!.username as Any,
+                "versionInfo": espDevice!.versionInfo ?? {}
+            ])
         }
     }
 
@@ -59,7 +76,9 @@ class EspIdfProvisioning: NSObject {
         espDevice?.connect(completionHandler: { status in
             switch status {
             case .connected:
-                resolve(status)
+                resolve([
+                    "status": "connected"
+                ])
             case .failedToConnect(let error):
                 reject("error", error.description, nil)
             case .disconnected:
@@ -83,7 +102,7 @@ class EspIdfProvisioning: NSObject {
                     return
                 }
 
-                resolve(data)
+                resolve(data!.base64EncodedString())
             })
         } else {
             reject("error", "Data is not base64 encoded.",  nil)
@@ -124,7 +143,12 @@ class EspIdfProvisioning: NSObject {
                 return
             }
 
-            resolve(wifiList)
+            resolve(wifiList!.map {[
+                "ssid": $0.ssid,
+                "bssid": $0.bssid,
+                "auth": $0.auth.rawValue,
+                "channel": $0.channel
+            ]})
         })
     }
 
@@ -143,7 +167,9 @@ class EspIdfProvisioning: NSObject {
         espDevice!.provision(ssid: ssid, passPhrase: passphrase, completionHandler: { status in
             switch status {
             case .success:
-                resolve(status)
+                resolve([
+                    "status": "success"
+                ])
             case .failure(let error):
                 reject("error", error.description, nil)
             case .configApplied:
@@ -162,7 +188,9 @@ class EspIdfProvisioning: NSObject {
         espDevice?.initialiseSession(sessionPath: sessionPath, completionHandler: { status in
             switch status {
             case .connected:
-                resolve(status)
+                resolve([
+                    "status": "connected"
+                ])
             case .failedToConnect(let error):
                 reject("error", error.description, nil)
             case .disconnected:

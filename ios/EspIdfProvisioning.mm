@@ -4,7 +4,7 @@
 
     RCT_EXTERN_METHOD(searchESPDevices:(NSString *)devicePrefix
                       transport:(NSString *)location
-                      security:(NSString *)security
+                      security:(NSInteger)security
                       resolve:(RCTPromiseResolveBlock)resolve
                       reject:(RCTPromiseRejectBlock)reject)
 
@@ -12,6 +12,10 @@
 
     RCT_EXTERN_METHOD(createESPDevice:(NSString *)deviceName
                       transport:(NSString *)transport
+                      security:(NSInteger)security
+                      proofOfPossession:(NSString *)proofOfPossession
+                      softAPPassword:(NSString *)softAPPassword
+                      username:(NSString *)username
                       resolve:(RCTPromiseResolveBlock)resolve
                       reject:(RCTPromiseRejectBlock)reject)
 
