@@ -27,7 +27,9 @@ stopESPDevicesSearch(): void;
 
 // https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPProvisionManager.swift#L319
 createESPDevice(deviceName: string, transport: Transport): Promise<any>;
+```
 
+```ts
 // These methods require calling `createESPDevice`.
 // Might want to bridge the ESPDevice class instead of keeping it in global scope?
 
