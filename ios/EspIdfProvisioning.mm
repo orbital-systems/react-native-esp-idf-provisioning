@@ -18,12 +18,6 @@
     RCT_EXTERN_METHOD(connect:(RCTPromiseResolveBlock)resolve
                       reject:(RCTPromiseRejectBlock)reject)
 
-    RCT_EXTERN_METHOD(connectToSoftApUsingCredentials:(NSString *)ssid
-                      resolve:(RCTPromiseResolveBlock)resolve
-                      reject:(RCTPromiseRejectBlock)reject)
-
-    RCT_EXTERN_METHOD(verifyConnection:(NSString *)ssid)
-
     RCT_EXTERN_METHOD(sendData:(NSString *)path
                       transport:(NSString *)data
                       resolve:(RCTPromiseResolveBlock)resolve
@@ -34,9 +28,6 @@
     RCT_EXTERN_METHOD(getProofOfPossesion:(RCTPromiseResolveBlock)resolve
                       reject:(RCTPromiseRejectBlock)reject)
 
-    RCT_EXTERN_METHOD(getUsername:(RCTPromiseResolveBlock)resolve
-                      reject:(RCTPromiseRejectBlock)reject)
-
     RCT_EXTERN_METHOD(scanWifiList:(RCTPromiseResolveBlock)resolve
                       reject:(RCTPromiseRejectBlock)reject)
 
@@ -44,6 +35,10 @@
 
     RCT_EXTERN_METHOD(provision:(NSString *)ssid
                       passphrase:(NSString *)passphrase
+                      resolve:(RCTPromiseResolveBlock)resolve
+                      reject:(RCTPromiseRejectBlock)reject)
+
+    RCT_EXTERN_METHOD(initialiseSession:(NSString *)sessionPath
                       resolve:(RCTPromiseResolveBlock)resolve
                       reject:(RCTPromiseRejectBlock)reject)
 

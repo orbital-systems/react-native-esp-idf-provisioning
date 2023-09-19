@@ -57,6 +57,10 @@ export function getProofOfPossession() {
   return EspIdfProvisioning.getProofOfPossession();
 }
 
+export function scanWifiList() {
+  return EspIdfProvisioning.scanWifiList();
+}
+
 export function disconnect() {
   return EspIdfProvisioning.disconnect();
 }
@@ -65,6 +69,6 @@ export function provision(ssid: string, passphrase: string) {
   return EspIdfProvisioning.provision(ssid, passphrase);
 }
 
-export function initSession(sessionPath: string) {
+export function initialiseSession(sessionPath: string) {
   return EspIdfProvisioning.initSession(sessionPath);
 }

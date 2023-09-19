@@ -180,8 +180,8 @@ class EspIdfProvisioning: NSObject {
         })
     }
 
-    @objc(initSession:resolve:reject:)
-    func initSession(sessionPath: String?, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+    @objc(initialiseSession:resolve:reject:)
+    func initialiseSession(sessionPath: String?, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         if espDevice == nil {
             reject("error", "No ESP device found. Call createESPDevice first.", nil)
             return
