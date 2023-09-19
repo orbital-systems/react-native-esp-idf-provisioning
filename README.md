@@ -46,6 +46,9 @@ isSessionEstablished(): boolean;
 // https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L76
 getProofOfPossession(): Promise<any>;
 
+// https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L422
+scanWifiList(): Promise<any>;
+
 // https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L407
 disconnect(): void;
 
@@ -53,7 +56,7 @@ disconnect(): void;
 provision(ssid: string, passphrase: string): Promise<any>;
 
 // https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L444
-initSession(sessionPath: string): Promise<any>;
+initialiseSession(sessionPath: string): Promise<any>;
 ```
 
 ## Permissions
