@@ -5,7 +5,7 @@ Android (not yet) and iOS wrapper for ESP IDF provisioning.
 ## Installation
 
 ```sh
-npm install react-native-esp-idf-provisioning
+npm install @orbital-systems/react-native-esp-idf-provisioning
 ```
 
 ## Functions
