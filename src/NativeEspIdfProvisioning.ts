@@ -14,9 +14,10 @@ export interface Spec extends TurboModule {
   sendData(path: string, data: string): Promise<any>;
   isSessionEstablished(): boolean;
   getProofOfPossession(): Promise<any>;
+  scanWifiList(): Promise<any>;
   disconnect(): void;
   provision(ssid: string, passphrase: string): Promise<any>;
-  initSession(sessionPath: string): Promise<any>;
+  initialiseSession(sessionPath: string): Promise<any>;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('EspIdfProvisioning');
