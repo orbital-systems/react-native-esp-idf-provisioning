@@ -4,6 +4,7 @@ export enum Transport {
 }
 
 export enum Security {
-  secure = 'secure',
-  unsecure = 'unsecure',
+  unsecure = 0,
+  secure = 1,
+  secure2 = 2,
 }
