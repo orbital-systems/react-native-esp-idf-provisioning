@@ -1,6 +1,6 @@
 # react-native-esp-idf-provisioning
 
-Android and iOS wrapper for ESP IDF provisioning
+Android (not yet) and iOS wrapper for ESP IDF provisioning.
 
 ## Installation
 
