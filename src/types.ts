@@ -1,15 +1,15 @@
-export enum Transport {
+export enum ESPTransport {
   ble = 'ble',
   softap = 'softap',
 }
 
-export enum Security {
+export enum ESPSecurity {
   unsecure = 0,
   secure = 1,
   secure2 = 2,
 }
 
-export enum WifiAuthMode {
+export enum ESPWifiAuthMode {
   UNRECOGNIZED = 0,
   open = 1,
   wep = 2,
@@ -23,8 +23,8 @@ export interface ESPDevice {
   name: string;
   advertisementData: { [key: string]: any }[];
   capabilities: string[];
-  security: Security;
-  transport: Transport;
+  security: ESPSecurity;
+  transport: ESPTransport;
   username?: string;
   versionInfo: { [key: string]: any }[];
 }
@@ -32,6 +32,10 @@ export interface ESPDevice {
 export interface ESPWifiList {
   ssid: string;
   bssid: string;
-  auth: WifiAuthMode;
+  auth: ESPWifiAuthMode;
   channel: number;
+}
+
+export interface ESPStatusResponse {
+  status: string;
 }
