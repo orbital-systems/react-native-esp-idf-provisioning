@@ -8,24 +8,25 @@ import {
   searchESPDevices,
 } from 'react-native-esp-idf-provisioning';
 import {
-  Security,
-  Transport,
+  ESPSecurity,
+  ESPTransport,
   type ESPDevice,
   type ESPWifiList,
+  type ESPStatusResponse,
 } from '../../src/types';
 
 export default function App() {
   const [devices, setDevices] = React.useState<ESPDevice[]>();
   const [device, setDevice] = React.useState<ESPDevice>();
-  const [response, setResponse] = React.useState();
+  const [response, setResponse] = React.useState<ESPStatusResponse>();
   const [wifiList, setWifiList] = React.useState<ESPWifiList[]>();
 
   const onSearchESPDevices = React.useCallback(async () => {
     try {
       const espDevices = await searchESPDevices(
         'PREFIX',
-        Transport.ble,
-        Security.secure
+        ESPTransport.ble,
+        ESPSecurity.secure
       );
 
       console.info(espDevices);
@@ -48,8 +49,8 @@ export default function App() {
       const proofOfPossesion = 'POP';
       const espDevice = await createESPDevice(
         devices[0].name,
-        Transport.ble,
-        Security.secure,
+        ESPTransport.ble,
+        ESPSecurity.secure,
         proofOfPossesion
       );
       console.info(espDevice);

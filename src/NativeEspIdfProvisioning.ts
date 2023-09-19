@@ -1,30 +1,36 @@
 import type { TurboModule } from 'react-native';
 import { TurboModuleRegistry } from 'react-native';
-import type { Security, Transport } from './types';
+import type {
+  ESPDevice,
+  ESPSecurity,
+  ESPStatusResponse,
+  ESPTransport,
+  ESPWifiList,
+} from './types';
 
 export interface Spec extends TurboModule {
   searchESPDevices(
     devicePrefix: string,
-    transport: Transport,
-    security: Security
-  ): Promise<any>;
+    transport: ESPTransport,
+    security: ESPSecurity
+  ): Promise<ESPDevice[]>;
   stopESPDevicesSearch(): void;
   createESPDevice(
     deviceName: string,
-    transport: Transport,
-    security: Security,
+    transport: ESPTransport,
+    security: ESPSecurity,
     proofOfPossesion?: string,
     softAPPassword?: string,
     username?: string
-  ): Promise<any>;
-  connect(): Promise<any>;
+  ): Promise<ESPDevice>;
+  connect(): Promise<ESPStatusResponse>;
   sendData(path: string, data: string): Promise<any>;
   isSessionEstablished(): boolean;
-  getProofOfPossession(): Promise<any>;
-  scanWifiList(): Promise<any>;
+  getProofOfPossession(): Promise<string | undefined>;
+  scanWifiList(): Promise<ESPWifiList>;
   disconnect(): void;
-  provision(ssid: string, passphrase: string): Promise<any>;
-  initialiseSession(sessionPath: string): Promise<any>;
+  provision(ssid: string, passphrase: string): Promise<ESPStatusResponse>;
+  initialiseSession(sessionPath: string): Promise<ESPStatusResponse>;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('EspIdfProvisioning');
