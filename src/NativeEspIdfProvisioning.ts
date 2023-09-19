@@ -9,7 +9,14 @@ export interface Spec extends TurboModule {
     security: Security
   ): Promise<any>;
   stopESPDevicesSearch(): void;
-  createESPDevice(deviceName: string, transport: Transport): Promise<any>;
+  createESPDevice(
+    deviceName: string,
+    transport: Transport,
+    security: Security,
+    proofOfPossesion?: string,
+    softAPPassword?: string,
+    username?: string
+  ): Promise<any>;
   connect(): Promise<any>;
   sendData(path: string, data: string): Promise<any>;
   isSessionEstablished(): boolean;

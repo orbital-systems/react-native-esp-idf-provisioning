@@ -37,8 +37,22 @@ export function stopESPDevicesSearch() {
   return EspIdfProvisioning.stopESPDevicesSearch();
 }
 
-export function createESPDevice(deviceName: string, transport: Transport) {
-  return EspIdfProvisioning.createESPDevice(deviceName, transport);
+export function createESPDevice(
+  deviceName: string,
+  transport: Transport,
+  security: Security,
+  proofOfPossesion: string | null = null,
+  softAPPassword: string | null = null,
+  username: string | null = null
+) {
+  return EspIdfProvisioning.createESPDevice(
+    deviceName,
+    transport,
+    security,
+    proofOfPossesion,
+    softAPPassword,
+    username
+  );
 }
 
 export function connect() {
@@ -69,6 +83,6 @@ export function provision(ssid: string, passphrase: string) {
   return EspIdfProvisioning.provision(ssid, passphrase);
 }
 
-export function initialiseSession(sessionPath: string) {
-  return EspIdfProvisioning.initSession(sessionPath);
+export function initialiseSession(sessionPath?: string) {
+  return EspIdfProvisioning.initialiseSession(sessionPath);
 }
