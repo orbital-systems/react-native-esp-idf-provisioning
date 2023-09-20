@@ -64,10 +64,7 @@ export function connect(): Promise<{ status: 'connected' }> {
   return EspIdfProvisioning.connect();
 }
 
-export function sendData(
-  path: string,
-  data: string
-): Promise<{ status: 'success' }> {
+export function sendData(path: string, data: string): Promise<string> {
   return EspIdfProvisioning.sendData(path, data);
 }
 

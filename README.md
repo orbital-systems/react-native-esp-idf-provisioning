@@ -88,8 +88,9 @@ createESPDevice(
 connect(): Promise<ESPStatusResponse>;
 
 // https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L249
-// Important: the bridge function takes data from react-native as a base64 encoded string, decodes it and sends it to the device
-sendData(path: string, data: string): Promise<ESPStatusResponse>;
+// Important: the bridge function takes data from react-native as a base64 encoded string, decodes it and sends it to the device.
+// The response is also base64 encoded data
+sendData(path: string, data: string): Promise<string>;
 
 // https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L260
 isSessionEstablished(): boolean;

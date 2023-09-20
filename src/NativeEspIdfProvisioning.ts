@@ -24,7 +24,7 @@ export interface Spec extends TurboModule {
     username?: string
   ): Promise<ESPDevice>;
   connect(): Promise<ESPStatusResponse>;
-  sendData(path: string, data: string): Promise<any>;
+  sendData(path: string, data: string): Promise<string>;
   isSessionEstablished(): boolean;
   getProofOfPossession(): Promise<string | undefined>;
   scanWifiList(): Promise<ESPWifiList>;

@@ -102,9 +102,7 @@ class EspIdfProvisioning: NSObject {
                     return
                 }
 
-                resolve([
-                    "status": "success"
-                ])
+                resolve(data!.base64EncodedString())
             })
         } else {
             reject("error", "Data is not base64 encoded.",  nil)
