@@ -8,6 +8,46 @@ Android (not yet) and iOS wrapper for ESP IDF provisioning.
 npm install @orbital-systems/react-native-esp-idf-provisioning
 ```
 
+## Usage
+
+```ts
+import {
+  searchESPDevices,
+  ESPDevice,
+  ESPTransport,
+  ESPSecurity,
+} from '@orbital-systems/react-native-esp-idf-provisioning';
+
+// Method 1.
+// Get devices...
+const devices = searchESPDevices('prefix');
+// ... and select device (using picklist, dropdown, w/e)
+const device = devices[0];
+
+// Method 2.
+// If you know device name and transport/security settings, create a device class instance
+const device = new ESPDevice({
+  name: 'name',
+  transport: ESPTransport.ble,
+  security: ESPSecurity.secure2,
+});
+
+// Connect to device with proofOfPossesion
+const proofOfPossesion = 'pop';
+await device.connect(proofOfPosession);
+
+// Get wifi list
+const wifiList = await device.scanWifiList();
+
+// Provision device
+const ssid = 'ssid';
+const passphrase = 'passphrase';
+await device.provision(ssid, passphrase);
+
+// Disconnect
+device.disconnect();
+```
+
 ## Enums
 
 ```ts
@@ -23,34 +63,12 @@ enum ESPSecurity {
 }
 
 enum ESPWifiAuthMode {
-  UNRECOGNIZED = 0,
-  open = 1,
-  wep = 2,
-  wpa2Enterprise = 3,
-  wpa2Psk = 4,
-  wpaPsk = 5,
-  wpaWpa2Psk = 6,
-}
-
-interface ESPDevice {
-  name: string;
-  advertisementData: { [key: string]: any }[];
-  capabilities: string[];
-  security: ESPSecurity;
-  transport: ESPTransport;
-  username?: string;
-  versionInfo: { [key: string]: any }[];
-}
-
-interface ESPWifiList {
-  ssid: string;
-  bssid: string;
-  auth: ESPWifiAuthMode;
-  channel: number;
-}
-
-interface ESPStatusResponse {
-  status: string;
+  open = 0,
+  wep = 1,
+  wpa2Enterprise = 2,
+  wpa2Psk = 3,
+  wpaPsk = 4,
+  wpaWpa2Psk = 5,
 }
 ```
 
@@ -82,33 +100,32 @@ createESPDevice(
 
 ```ts
 // These methods require calling `createESPDevice`.
-// Might want to bridge the ESPDevice class instead of keeping it in global scope?
 
 // https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L164
-connect(): Promise<ESPStatusResponse>;
+connect(deviceName: string): Promise<ESPStatusResponse>;
 
 // https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L249
 // Important: the bridge function takes data from react-native as a base64 encoded string, decodes it and sends it to the device.
 // The response is also base64 encoded data
-sendData(path: string, data: string): Promise<string>;
+sendData(deviceName: string, path: string, data: string): Promise<string>;
 
 // https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L260
-isSessionEstablished(): boolean;
+isSessionEstablished(deviceName: string): boolean;
 
 // https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L76
-getProofOfPossession(): Promise<string | undefined>;
+getProofOfPossession(deviceName: string): Promise<string | undefined>;
 
 // https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L422
-scanWifiList(): Promise<ESPWifiList>;
+scanWifiList(deviceName: string): Promise<ESPWifiList>;
 
 // https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L407
-disconnect(): void;
+disconnect(deviceName: string): void;
 
 // https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L325
-provision(ssid: string, passphrase: string): Promise<ESPStatusResponse>;
+provision(deviceName: string, ssid: string, passphrase: string): Promise<ESPStatusResponse>;
 
 // https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L444
-initialiseSession(sessionPath: string): Promise<ESPStatusResponse>;
+initialiseSession(deviceName: string, sessionPath: string): Promise<ESPStatusResponse>;
 ```
 
 ## Permissions
