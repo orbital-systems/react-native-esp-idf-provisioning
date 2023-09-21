@@ -10,23 +10,23 @@ export enum ESPSecurity {
 }
 
 export enum ESPWifiAuthMode {
-  UNRECOGNIZED = 0,
-  open = 1,
-  wep = 2,
-  wpa2Enterprise = 3,
-  wpa2Psk = 4,
-  wpaPsk = 5,
-  wpaWpa2Psk = 6,
+  open = 0,
+  wep = 1,
+  wpa2Enterprise = 2,
+  wpa2Psk = 3,
+  wpaPsk = 4,
+  wpaWpa2Psk = 5,
 }
 
-export interface ESPDevice {
+export interface ESPDeviceInterface {
   name: string;
-  advertisementData: { [key: string]: any }[];
-  capabilities: string[];
   security: ESPSecurity;
   transport: ESPTransport;
+  connected: boolean;
   username?: string;
-  versionInfo: { [key: string]: any }[];
+  versionInfo?: { [key: string]: any }[];
+  capabilities?: string[];
+  advertisementData?: { [key: string]: any }[];
 }
 
 export interface ESPWifiList {

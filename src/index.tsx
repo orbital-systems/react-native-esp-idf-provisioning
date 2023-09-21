@@ -1,9 +1,10 @@
 import { NativeModules, Platform } from 'react-native';
 import type {
-  ESPDevice,
+  ESPDeviceInterface,
   ESPWifiList,
   ESPSecurity,
   ESPTransport,
+  ESPStatusResponse,
 } from './types';
 
 const LINKING_ERROR =
@@ -30,69 +31,91 @@ const EspIdfProvisioning = EspIdfProvisioningModule
       }
     );
 
-export function searchESPDevices(
+export class ESPDevice implements ESPDeviceInterface {
+  name: string;
+  transport: ESPTransport;
+  security: ESPSecurity;
+  connected: boolean = false;
+  capabilities?: string[];
+  versionInfo?: { [key: string]: any }[];
+  advertisementData?: { [key: string]: any }[];
+
+  constructor({ name, transport, security }: ESPDeviceInterface) {
+    this.name = name;
+    this.transport = transport;
+    this.security = security;
+  }
+
+  async connect(
+    proofOfPossesion: string | null = null,
+    softAPPassword: string | null = null,
+    username: string | null = null
+  ): Promise<void> {
+    const data = await EspIdfProvisioning.createESPDevice(
+      this.name,
+      this.transport,
+      this.security,
+      proofOfPossesion,
+      softAPPassword,
+      username
+    );
+
+    const response = await EspIdfProvisioning.connect(this.name);
+
+    this.connected = true;
+    this.capabilities = data.capabilities;
+    this.versionInfo = data.versionInfo;
+    this.advertisementData = data.advertisementData;
+
+    return response;
+  }
+
+  sendData(path: string, data: string): Promise<string> {
+    return EspIdfProvisioning.sendData(this.name, path, data);
+  }
+
+  isSessionEstablished(): boolean {
+    return EspIdfProvisioning.isSessionEstablished(this.name);
+  }
+
+  getProofOfPossession(): string | undefined {
+    return EspIdfProvisioning.getProofOfPossession(this.name);
+  }
+
+  scanWifiList(): ESPWifiList[] {
+    return EspIdfProvisioning.scanWifiList(this.name);
+  }
+
+  disconnect(): void {
+    this.connected = false;
+    return EspIdfProvisioning.disconnect(this.name);
+  }
+
+  provision(ssid: string, passphrase: string): Promise<ESPStatusResponse> {
+    return EspIdfProvisioning.provision(this.name, ssid, passphrase);
+  }
+
+  initialiseSession(sessionPath?: string): Promise<ESPStatusResponse> {
+    return EspIdfProvisioning.initialiseSession(this.name, sessionPath);
+  }
+}
+
+export async function searchESPDevices(
   devicePrefix: string,
   transport: ESPTransport,
   security: ESPSecurity
 ): Promise<ESPDevice[]> {
-  return EspIdfProvisioning.searchESPDevices(devicePrefix, transport, security);
+  const espDevices = await EspIdfProvisioning.searchESPDevices(
+    devicePrefix,
+    transport,
+    security
+  );
+
+  return espDevices?.map(
+    (espDevice: ESPDeviceInterface) => new ESPDevice(espDevice)
+  );
 }
 
 export function stopESPDevicesSearch(): void {
   return EspIdfProvisioning.stopESPDevicesSearch();
-}
-
-export function createESPDevice(
-  deviceName: string,
-  transport: ESPTransport,
-  security: ESPSecurity,
-  proofOfPossesion: string | null = null,
-  softAPPassword: string | null = null,
-  username: string | null = null
-): Promise<ESPDevice> {
-  return EspIdfProvisioning.createESPDevice(
-    deviceName,
-    transport,
-    security,
-    proofOfPossesion,
-    softAPPassword,
-    username
-  );
-}
-
-export function connect(): Promise<{ status: 'connected' }> {
-  return EspIdfProvisioning.connect();
-}
-
-export function sendData(path: string, data: string): Promise<string> {
-  return EspIdfProvisioning.sendData(path, data);
-}
-
-export function isSessionEstablished(): boolean {
-  return EspIdfProvisioning.isSessionEstablished();
-}
-
-export function getProofOfPossession(): string | undefined {
-  return EspIdfProvisioning.getProofOfPossession();
-}
-
-export function scanWifiList(): ESPWifiList[] {
-  return EspIdfProvisioning.scanWifiList();
-}
-
-export function disconnect(): void {
-  return EspIdfProvisioning.disconnect();
-}
-
-export function provision(
-  ssid: string,
-  passphrase: string
-): Promise<{ status: 'success' }> {
-  return EspIdfProvisioning.provision(ssid, passphrase);
-}
-
-export function initialiseSession(
-  sessionPath?: string
-): Promise<{ status: 'connected' }> {
-  return EspIdfProvisioning.initialiseSession(sessionPath);
 }
