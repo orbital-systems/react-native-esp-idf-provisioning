@@ -24,7 +24,7 @@
 
     RCT_EXTERN_METHOD(sendData:(NSString *)deviceName
                       path:(NSString *)path
-                      transport:(NSString *)data
+                      data:(NSString *)data
                       resolve:(RCTPromiseResolveBlock)resolve
                       reject:(RCTPromiseRejectBlock)reject)
 
