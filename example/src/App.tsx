@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { Buffer } from 'buffer';
 
 import {
   StyleSheet,
@@ -52,6 +53,10 @@ export default function App() {
       setIsLoading(false);
       console.error(error);
     }
+
+    return () => {
+      device.disconnect();
+    };
   }, []);
 
   const onDisconnect = React.useCallback(
@@ -94,6 +99,37 @@ export default function App() {
     },
     [wifiList]
   );
+
+  const onSendData = React.useCallback(async (device: ESPDevice) => {
+    try {
+      setIsLoading(true);
+
+      const customData = Buffer.from('hello, world!').toString('base64');
+      const customDataResponse = await device.sendData(
+        'custom-data',
+        customData
+      );
+      console.info(
+        `custom-data response: ${Buffer.from(
+          customDataResponse,
+          'base64'
+        ).toString('utf8')}`
+      );
+
+      const deviceIdData = Buffer.from('hello, world!').toString('base64');
+      const deviceIdResponse = await device.sendData('device-id', deviceIdData);
+      console.info(
+        `device-id response: ${Buffer.from(deviceIdResponse, 'base64').toString(
+          'utf8'
+        )}`
+      );
+
+      setIsLoading(false);
+    } catch (error) {
+      setIsLoading(false);
+      console.error(error);
+    }
+  }, []);
 
   const onProvision = React.useCallback(
     async (device: ESPDevice) => {
@@ -143,6 +179,11 @@ export default function App() {
           <Button
             title={`Scan wifi list on ${device.name}`}
             onPress={() => onScanWifiList(device)}
+            disabled={!device.connected}
+          />
+          <Button
+            title={`Send data to ${device.name}`}
+            onPress={() => onSendData(device)}
             disabled={!device.connected}
           />
           {wifiList[device.name]?.map((item) => (
