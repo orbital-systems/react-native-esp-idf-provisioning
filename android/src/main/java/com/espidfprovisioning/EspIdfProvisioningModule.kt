@@ -1,10 +1,13 @@
 package com.espidfprovisioning
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.le.ScanResult
+import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
+import androidx.core.app.ActivityCompat
 import com.espressif.provisioning.ESPConstants
 import com.espressif.provisioning.ESPDevice
 import com.espressif.provisioning.ESPProvisionManager
@@ -33,10 +36,17 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
   private val espProvisionManager = ESPProvisionManager.getInstance(context)
   private val espDevices = HashMap<String, ESPDevice>()
 
-  // TODO: Permission check?
-  @SuppressLint("MissingPermission")
   @ReactMethod
   override fun searchESPDevices(devicePrefix: String, transport: String, security: Int, promise: Promise?) {
+    if (ActivityCompat.checkSelfPermission(
+        reactApplicationContext,
+        Manifest.permission.ACCESS_FINE_LOCATION
+      ) != PackageManager.PERMISSION_GRANTED
+    ) {
+      promise?.reject(Error("Permission ACCESS_FINE_LOCATION is missing."))
+      return;
+    }
+
     val transport = when (transport) {
       "softap" -> ESPConstants.TransportType.TRANSPORT_SOFTAP
       "ble" -> ESPConstants.TransportType.TRANSPORT_BLE
@@ -105,9 +115,15 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
     }, 5000)
   }
 
-  // TODO: Permission check?
-  @SuppressLint("MissingPermission")
   override fun stopESPDevicesSearch() {
+    if (ActivityCompat.checkSelfPermission(
+        reactApplicationContext,
+        Manifest.permission.ACCESS_FINE_LOCATION
+      ) != PackageManager.PERMISSION_GRANTED
+    ) {
+      // No need to check permissions when stopping BLE scan
+      return
+    }
     espProvisionManager.stopBleScan()
   }
 
@@ -122,7 +138,6 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
   ) {
     // TODO: Can this be written shorter?
     val promise = object : Promise {
-      @SuppressLint("MissingPermission")
       override fun resolve(p0: Any?) {
         promise?.resolve(hashMapOf(
           "name" to espDevices[deviceName]?.deviceName,
@@ -180,8 +195,43 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
   }
 
   // TODO: Permission check?
-  @SuppressLint("MissingPermission")
   override fun connect(deviceName: String, transport: String, promise: Promise?) {
+    if (ActivityCompat.checkSelfPermission(
+        reactApplicationContext,
+        Manifest.permission.ACCESS_FINE_LOCATION
+      ) != PackageManager.PERMISSION_GRANTED
+    ) {
+      promise?.reject(Error("Permission ACCESS_FINE_LOCATION is missing."))
+      return;
+    }
+
+    if (ActivityCompat.checkSelfPermission(
+        reactApplicationContext,
+        Manifest.permission.CHANGE_WIFI_STATE
+      ) != PackageManager.PERMISSION_GRANTED
+    ) {
+      promise?.reject(Error("Permission CHANGE_WIFI_STATE is missing."))
+      return;
+    }
+
+    if (ActivityCompat.checkSelfPermission(
+        reactApplicationContext,
+        Manifest.permission.ACCESS_WIFI_STATE
+      ) != PackageManager.PERMISSION_GRANTED
+    ) {
+      promise?.reject(Error("Permission ACCESS_WIFI_STATE is missing."))
+      return;
+    }
+
+    if (ActivityCompat.checkSelfPermission(
+        reactApplicationContext,
+        Manifest.permission.ACCESS_NETWORK_STATE
+      ) != PackageManager.PERMISSION_GRANTED
+    ) {
+      promise?.reject(Error("Permission ACCESS_NETWORK_STATE is missing."))
+      return;
+    }
+
     if (espDevices[deviceName] == null) {
       promise?.reject(Error("No ESP device found. Call createESPDevice first."))
       return
