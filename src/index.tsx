@@ -118,22 +118,24 @@ export class ESPDevice implements ESPDeviceInterface {
   }
 }
 
-export async function searchESPDevices(
-  devicePrefix: string,
-  transport: ESPTransport,
-  security: ESPSecurity
-): Promise<ESPDevice[]> {
-  const espDevices = await EspIdfProvisioning.searchESPDevices(
-    devicePrefix,
-    transport,
-    security
-  );
+export class ESPProvisionManager {
+  static async searchESPDevices(
+    devicePrefix: string,
+    transport: ESPTransport,
+    security: ESPSecurity
+  ): Promise<ESPDevice[]> {
+    const espDevices = await EspIdfProvisioning.searchESPDevices(
+      devicePrefix,
+      transport,
+      security
+    );
 
-  return espDevices?.map(
-    (espDevice: ESPDeviceInterface) => new ESPDevice(espDevice)
-  );
-}
+    return espDevices?.map(
+      (espDevice: ESPDeviceInterface) => new ESPDevice(espDevice)
+    );
+  }
 
-export function stopESPDevicesSearch(): void {
-  return EspIdfProvisioning.stopESPDevicesSearch();
+  static stopESPDevicesSearch(): void {
+    return EspIdfProvisioning.stopESPDevicesSearch();
+  }
 }

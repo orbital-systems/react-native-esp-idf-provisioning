@@ -9,7 +9,10 @@ import {
   Modal,
   View,
 } from 'react-native';
-import { searchESPDevices, ESPDevice } from 'react-native-esp-idf-provisioning';
+import {
+  ESPProvisionManager,
+  ESPDevice,
+} from 'react-native-esp-idf-provisioning';
 import { ESPSecurity, ESPTransport, type ESPWifiList } from '../../src/types';
 
 export default function App() {
@@ -26,7 +29,7 @@ export default function App() {
     try {
       setIsLoading(true);
       setDevices(undefined);
-      const espDevices = await searchESPDevices(
+      const espDevices = await ESPProvisionManager.searchESPDevices(
         'PREFIX',
         ESPTransport.ble,
         ESPSecurity.secure
