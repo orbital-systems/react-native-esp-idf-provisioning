@@ -36,6 +36,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
   private val espProvisionManager = ESPProvisionManager.getInstance(context)
   private val espDevices = HashMap<String, ESPDevice>()
 
+  @SuppressLint("MissingPermission")
   @ReactMethod
   override fun searchESPDevices(devicePrefix: String, transport: String, security: Int, promise: Promise?) {
     if (ActivityCompat.checkSelfPermission(
@@ -44,6 +45,24 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       ) != PackageManager.PERMISSION_GRANTED
     ) {
       promise?.reject(Error("Permission ACCESS_FINE_LOCATION is missing."))
+      return;
+    }
+
+    if (ActivityCompat.checkSelfPermission(
+        reactApplicationContext,
+        Manifest.permission.BLUETOOTH_ADMIN
+      ) != PackageManager.PERMISSION_GRANTED
+    ) {
+      promise?.reject(Error("Permission BLUETOOTH_ADMIN is missing."))
+      return;
+    }
+
+    if (ActivityCompat.checkSelfPermission(
+        reactApplicationContext,
+        Manifest.permission.BLUETOOTH
+      ) != PackageManager.PERMISSION_GRANTED
+    ) {
+      promise?.reject(Error("Permission BLUETOOTH is missing."))
       return;
     }
 
@@ -115,6 +134,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
     }, 5000)
   }
 
+  @SuppressLint("MissingPermission")
   override fun stopESPDevicesSearch() {
     if (ActivityCompat.checkSelfPermission(
         reactApplicationContext,
@@ -195,6 +215,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
   }
 
   // TODO: Permission check?
+  @SuppressLint("MissingPermission")
   override fun connect(deviceName: String, transport: String, promise: Promise?) {
     if (ActivityCompat.checkSelfPermission(
         reactApplicationContext,
