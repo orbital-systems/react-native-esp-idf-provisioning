@@ -1,4 +1,5 @@
 import { NativeModules, Platform } from 'react-native';
+import { Buffer } from 'buffer';
 import type {
   ESPDeviceInterface,
   ESPWifiList,
@@ -39,11 +40,21 @@ export class ESPDevice implements ESPDeviceInterface {
   capabilities?: string[];
   versionInfo?: { [key: string]: any }[];
   advertisementData?: { [key: string]: any }[];
+  address?: string;
+  primaryServiceUuid?: string;
 
-  constructor({ name, transport, security }: ESPDeviceInterface) {
+  constructor({
+    name,
+    transport,
+    security,
+    address,
+    primaryServiceUuid,
+  }: ESPDeviceInterface) {
     this.name = name;
     this.transport = transport;
     this.security = security;
+    this.address = address;
+    this.primaryServiceUuid = primaryServiceUuid;
   }
 
   async connect(
@@ -55,6 +66,8 @@ export class ESPDevice implements ESPDeviceInterface {
       this.name,
       this.transport,
       this.security,
+      this.address,
+      this.primaryServiceUuid,
       proofOfPossesion,
       softAPPassword,
       username
@@ -71,7 +84,12 @@ export class ESPDevice implements ESPDeviceInterface {
   }
 
   sendData(path: string, data: string): Promise<string> {
-    return EspIdfProvisioning.sendData(this.name, path, data);
+    const base64Data = Buffer.from(path).toString('base64');
+    console.info(`Sending data to ${this.name}: ${base64Data}`);
+    return EspIdfProvisioning.sendData(this.name, base64Data, data).then(
+      (responseData: string) =>
+        Buffer.from(responseData, 'base64').toString('utf8')
+    );
   }
 
   isSessionEstablished(): boolean {

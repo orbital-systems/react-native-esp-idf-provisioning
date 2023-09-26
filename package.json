@@ -164,5 +164,8 @@
     "name": "RNEspIdfProvisioningSpec",
     "type": "modules",
     "jsSrcsDir": "src"
+  },
+  "dependencies": {
+    "buffer": "^6.0.3"
   }
 }

@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { Buffer } from 'buffer';
 
 import {
   StyleSheet,
@@ -104,25 +103,17 @@ export default function App() {
     try {
       setIsLoading(true);
 
-      const customData = Buffer.from('hello, world!').toString('base64');
       const customDataResponse = await device.sendData(
         'custom-data',
-        customData
+        'hello, world!'
       );
-      console.info(
-        `custom-data response: ${Buffer.from(
-          customDataResponse,
-          'base64'
-        ).toString('utf8')}`
-      );
+      console.info(`custom-data response: ${customDataResponse}`);
 
-      const deviceIdData = Buffer.from('hello, world!').toString('base64');
-      const deviceIdResponse = await device.sendData('device-id', deviceIdData);
-      console.info(
-        `device-id response: ${Buffer.from(deviceIdResponse, 'base64').toString(
-          'utf8'
-        )}`
+      const deviceIdResponse = await device.sendData(
+        'device-id',
+        'hello, world!'
       );
+      console.info(`device-id response: ${deviceIdResponse}`);
 
       setIsLoading(false);
     } catch (error) {
@@ -151,6 +142,7 @@ export default function App() {
               {}
             )
         );
+        setModal(undefined);
       } catch (error) {
         setIsLoading(false);
         setPassphrase(undefined);

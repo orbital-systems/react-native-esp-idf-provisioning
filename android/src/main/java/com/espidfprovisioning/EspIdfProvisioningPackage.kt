@@ -7,28 +7,28 @@ import com.facebook.react.module.model.ReactModuleInfo
 import com.facebook.react.module.model.ReactModuleInfoProvider
 
 class EspIdfProvisioningPackage : TurboReactPackage() {
-    override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? {
-        return if (name == EspIdfProvisioningModule.NAME) {
-            EspIdfProvisioningModule(reactContext)
-        } else {
-            null
-        }
+  override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? {
+    return if (name == EspIdfProvisioningModule.NAME) {
+      EspIdfProvisioningModule(reactContext)
+    } else {
+      null
     }
+  }
 
-    override fun getReactModuleInfoProvider(): ReactModuleInfoProvider {
-        return ReactModuleInfoProvider {
-            val moduleInfos: MutableMap<String, ReactModuleInfo> = HashMap()
-            val isTurboModule = BuildConfig.IS_NEW_ARCHITECTURE_ENABLED
-            moduleInfos[EspIdfProvisioningModule.NAME] = ReactModuleInfo(
-                    EspIdfProvisioningModule.NAME,
-                    EspIdfProvisioningModule.NAME,
-                    false,  // canOverrideExistingModule
-                    false,  // needsEagerInit
-                    true,  // hasConstants
-                    false,  // isCxxModule
-                    isTurboModule // isTurboModule
-            )
-            moduleInfos
-        }
+  override fun getReactModuleInfoProvider(): ReactModuleInfoProvider {
+    return ReactModuleInfoProvider {
+      val moduleInfos: MutableMap<String, ReactModuleInfo> = HashMap()
+      val isTurboModule = BuildConfig.IS_NEW_ARCHITECTURE_ENABLED
+      moduleInfos[EspIdfProvisioningModule.NAME] = ReactModuleInfo(
+                  EspIdfProvisioningModule.NAME,
+                  EspIdfProvisioningModule.NAME,
+                  false,  // canOverrideExistingModule
+                  false,  // needsEagerInit
+                  true,  // hasConstants
+                  false,  // isCxxModule
+                  isTurboModule // isTurboModule
+      )
+      moduleInfos
     }
+  }
 }
