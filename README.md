@@ -12,7 +12,7 @@ npm install @orbital-systems/react-native-esp-idf-provisioning
 
 ```ts
 import {
-  searchESPDevices,
+  ESPProvisionManager,
   ESPDevice,
   ESPTransport,
   ESPSecurity,
@@ -20,7 +20,7 @@ import {
 
 // Method 1.
 // Get devices...
-const devices = searchESPDevices('prefix');
+const devices = ESPProvisionManager.searchESPDevices('prefix');
 // ... and select device (using picklist, dropdown, w/e)
 const device = devices[0];
 
@@ -72,63 +72,13 @@ enum ESPWifiAuthMode {
 }
 ```
 
-## Functions
-
-I deliberately skipped the scanQRCode functions for this first release but might want to add those as well for full public API compatibility.
-
-```ts
-// https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPProvisionManager.swift#L97
-searchESPDevices(
-  devicePrefix: string,
-  transport: ESPTransport,
-  security: ESPSecurity
-): Promise<ESPDevice[]>;
-
-// https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPProvisionManager.swift#L123
-stopESPDevicesSearch(): void;
-
-// https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPProvisionManager.swift#L319
-createESPDevice(
-  deviceName: string,
-  transport: ESPTransport,
-  security: ESPSecurity,
-  proofOfPossesion?: string,
-  softAPPassword?: string,
-  username?: string
-): Promise<ESPDevice>;
-```
-
-```ts
-// These methods require calling `createESPDevice`.
-
-// https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L164
-connect(deviceName: string): Promise<ESPStatusResponse>;
-
-// https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L249
-// Important: the bridge function takes data from react-native as a base64 encoded string, decodes it and sends it to the device.
-// The response is also base64 encoded data
-sendData(deviceName: string, path: string, data: string): Promise<string>;
-
-// https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L260
-isSessionEstablished(deviceName: string): boolean;
-
-// https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L76
-getProofOfPossession(deviceName: string): Promise<string | undefined>;
-
-// https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L422
-scanWifiList(deviceName: string): Promise<ESPWifiList>;
-
-// https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L407
-disconnect(deviceName: string): void;
-
-// https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L325
-provision(deviceName: string, ssid: string, passphrase: string): Promise<ESPStatusResponse>;
-
-// https://github.com/espressif/esp-idf-provisioning-ios/blob/master/ESPProvision/ESPDevice.swift#L444
-initialiseSession(deviceName: string, sessionPath: string): Promise<ESPStatusResponse>;
-```
-
 ## Permissions
+
+### Android
+
+See AndroidManifest.xml in the example project.
+
+### iOS
 
 - Since iOS 13, apps that want to access SSID (Wi-Fi network name) are required to have the location permission. Add key `NSLocationWhenInUseUsageDescription` in Info.plist with proper description. This permission is required to verify iOS device is currently connected with the SoftAP.
 
