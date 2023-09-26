@@ -48,8 +48,8 @@ class EspIdfProvisioning: NSObject {
         ESPProvisionManager.shared.stopESPDevicesSearch()
     }
 
-    @objc(createESPDevice:transport:security:proofOfPossession:softAPPassword:username:resolve:reject:)
-    func createESPDevice(deviceName: String, transport: String, security: Int, proofOfPossession:String? = nil, softAPPassword:String? = nil, username:String? = nil, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+    @objc(createESPDevice:transport:security:address:proofOfPossession:softAPPassword:username:resolve:reject:)
+    func createESPDevice(deviceName: String, transport: String, security: Int, address: String? = nil, primaryServiceUuid: String? = nil, proofOfPossession: String? = nil, softAPPassword: String? = nil, username: String? = nil, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         let transport = ESPTransport(rawValue: transport) ?? ESPTransport.ble
         let security = ESPSecurity(rawValue: security)
 
@@ -101,7 +101,7 @@ class EspIdfProvisioning: NSObject {
             return
         }
 
-        let data: Data = data.data(using: .utf8)!
+        let data: Data = data.data(using: .utf16)!
         if let data = Data(base64Encoded: data) {
             self.espDevices[deviceName]!.sendData(path: path, data: data, completionHandler: { data, error in
                 if error != nil {
