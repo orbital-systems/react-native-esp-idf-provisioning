@@ -131,6 +131,7 @@ export default function App() {
         setIsLoading(true);
         const response = await device.provision(ssid!, passphrase!);
         console.info(response);
+        await device.disconnect();
         setIsLoading(false);
         setSsid(undefined);
         setPassphrase(undefined);
@@ -157,30 +158,28 @@ export default function App() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.text}>{isLoading ? 'Loading...' : 'Ready'}</Text>
       <Button onPress={onSearchESPDevices} title="Search ESP Devices" />
-      <Text>{isLoading ? 'Loading...' : 'Ready'}</Text>
       {devices?.map((device) => (
         <View key={device.name} style={styles.device}>
+          <Text style={styles.text}>{device.name}</Text>
           <Button
-            title={
-              device.connected
-                ? `Disconnect from ${device.name}`
-                : `Connect to ${device.name}`
-            }
+            title={device.connected ? 'Disconnect' : 'Connect'}
             onPress={() =>
               device.connected ? onDisconnect(device) : onConnect(device)
             }
           />
           <Button
-            title={`Scan wifi list on ${device.name}`}
+            title="Scan wifi list"
             onPress={() => onScanWifiList(device)}
             disabled={!device.connected}
           />
           <Button
-            title={`Send data to ${device.name}`}
+            title="Send data"
             onPress={() => onSendData(device)}
             disabled={!device.connected}
           />
+          {wifiList[device.name] && <Text style={styles.text}>Wifi list</Text>}
           {wifiList[device.name]?.map((item) => (
             <Button
               key={item.ssid}
@@ -207,9 +206,11 @@ export default function App() {
             presentationStyle="pageSheet"
           >
             <View style={styles.modal}>
+              <Text style={styles.text}>{device.name}</Text>
               <Text style={styles.text}>{ssid}</Text>
               <TextInput
                 style={styles.text}
+                placeholderTextColor="black"
                 textContentType="password"
                 placeholder="Passphrase"
                 value={passphrase}
@@ -240,25 +241,26 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
     paddingTop: '20%',
+    backgroundColor: 'white',
   },
   device: {
-    alignItems: 'center',
     paddingTop: '5%',
   },
   modal: {
     flex: 1,
-    alignItems: 'center',
     paddingTop: '20%',
   },
   text: {
+    color: 'black',
     textAlign: 'center',
     width: '100%',
     fontSize: 16,
     paddingVertical: 5,
   },
   input: {
+    backgroundColor: 'white',
+    color: 'black',
     height: 40,
     margin: 12,
     borderWidth: 1,
