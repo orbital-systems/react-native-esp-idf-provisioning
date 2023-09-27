@@ -17,10 +17,13 @@ import { ESPSecurity, ESPTransport, type ESPWifiList } from '../../src/types';
 
 export default function App() {
   const [devices, setDevices] = React.useState<ESPDevice[]>();
+  const [isLoading, setIsLoading] = React.useState<boolean>(false);
   const [wifiList, setWifiList] = React.useState<{
     [key: string]: ESPWifiList[];
   }>({});
-  const [isLoading, setIsLoading] = React.useState<boolean>(false);
+  const [path, setPath] = React.useState<string>('');
+  const [data, setData] = React.useState<string>('');
+  const [dataResponse, setDataResponse] = React.useState<string>('');
   const [ssid, setSsid] = React.useState<string>();
   const [passphrase, setPassphrase] = React.useState<string>();
   const [modal, setModal] = React.useState<string>();
@@ -66,6 +69,9 @@ export default function App() {
       try {
         setIsLoading(true);
         await device.disconnect();
+        setPath('');
+        setData('');
+        setDataResponse('');
         setWifiList(
           Object.keys(wifiList)
             .filter((key) => key !== device.name)
@@ -102,28 +108,23 @@ export default function App() {
     [wifiList]
   );
 
-  const onSendData = React.useCallback(async (device: ESPDevice) => {
-    try {
-      setIsLoading(true);
+  const onSendData = React.useCallback(
+    async (device: ESPDevice) => {
+      try {
+        setIsLoading(true);
 
-      const customDataResponse = await device.sendData(
-        'custom-data',
-        'hello, world!'
-      );
-      console.info(`custom-data response: ${customDataResponse}`);
+        setDataResponse('');
+        const response = await device.sendData(path, data);
+        setDataResponse(response);
 
-      const deviceIdResponse = await device.sendData(
-        'device-id',
-        'hello, world!'
-      );
-      console.info(`device-id response: ${deviceIdResponse}`);
-
-      setIsLoading(false);
-    } catch (error) {
-      setIsLoading(false);
-      console.error(error);
-    }
-  }, []);
+        setIsLoading(false);
+      } catch (error) {
+        setIsLoading(false);
+        console.error(error);
+      }
+    },
+    [data, path]
+  );
 
   const onProvision = React.useCallback(
     async (device: ESPDevice) => {
@@ -132,6 +133,9 @@ export default function App() {
         const response = await device.provision(ssid!, passphrase!);
         console.info(response);
         await device.disconnect();
+        setPath('');
+        setData('');
+        setDataResponse('');
         setIsLoading(false);
         setSsid(undefined);
         setPassphrase(undefined);
@@ -174,11 +178,30 @@ export default function App() {
             onPress={() => onScanWifiList(device)}
             disabled={!device.connected}
           />
+          {device.connected && (
+            <TextInput
+              style={styles.text}
+              placeholderTextColor="black"
+              placeholder="Path"
+              value={path}
+              onChangeText={(value) => setPath(value)}
+            />
+          )}
+          {device.connected && (
+            <TextInput
+              style={styles.text}
+              placeholderTextColor="black"
+              placeholder="Data"
+              value={data}
+              onChangeText={(value) => setData(value)}
+            />
+          )}
           <Button
             title="Send data"
             onPress={() => onSendData(device)}
             disabled={!device.connected}
           />
+          <Text style={styles.text}>{dataResponse}</Text>
           {wifiList[device.name] && <Text style={styles.text}>Wifi list</Text>}
           {wifiList[device.name]?.map((item) => (
             <Button

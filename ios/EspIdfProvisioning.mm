@@ -12,9 +12,9 @@
     RCT_EXTERN_METHOD(createESPDevice:(NSString *)deviceName
                       transport:(NSString *)transport
                       security:(NSInteger)security
-                      proofOfPossession:(NSString *)proofOfPossession
                       address:(NSString *)address
                       primaryServiceUuid:(NSString *)primaryServiceUuid
+                      proofOfPossession:(NSString *)proofOfPossession
                       softAPPassword:(NSString *)softAPPassword
                       username:(NSString *)username
                       resolve:(RCTPromiseResolveBlock)resolve
