@@ -84,11 +84,10 @@ export class ESPDevice implements ESPDeviceInterface {
   }
 
   sendData(path: string, data: string): Promise<string> {
-    const base64Data = Buffer.from(path).toString('base64');
+    const base64Data = Buffer.from(data).toString('base64');
     console.info(`Sending data to ${this.name}: ${base64Data}`);
-    return EspIdfProvisioning.sendData(this.name, base64Data, data).then(
-      (responseData: string) =>
-        Buffer.from(responseData, 'base64').toString('utf8')
+    return EspIdfProvisioning.sendData(this.name, path, base64Data).then(
+      (returnData: string) => Buffer.from(returnData, 'base64').toString('utf8')
     );
   }
 
