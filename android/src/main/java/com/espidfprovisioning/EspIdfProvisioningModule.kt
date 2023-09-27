@@ -5,7 +5,6 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.ScanResult
 import android.content.Context
-import android.util.Log
 import com.espressif.provisioning.DeviceConnectionEvent;
 import com.espressif.provisioning.ESPConstants
 import com.espressif.provisioning.ESPDevice
@@ -207,11 +206,10 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       return
     }
 
-    val data = Base64.getDecoder().decode(data.toByteArray(Charsets.UTF_16))
-
+    val data = Base64.getDecoder().decode(data)
     espDevices[deviceName]!!.sendDataToCustomEndPoint(path, data, object : ResponseListener {
       override fun onSuccess(returnData: ByteArray?) {
-        val returnData = Base64.getEncoder().encode(returnData).toString()
+        val returnData = Base64.getEncoder().encode(returnData).toString(Charsets.UTF_8)
         promise?.resolve(returnData)
       }
 
