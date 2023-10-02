@@ -12,8 +12,6 @@
     RCT_EXTERN_METHOD(createESPDevice:(NSString *)deviceName
                       transport:(NSString *)transport
                       security:(NSInteger)security
-                      address:(NSString *)address
-                      primaryServiceUuid:(NSString *)primaryServiceUuid
                       proofOfPossession:(NSString *)proofOfPossession
                       softAPPassword:(NSString *)softAPPassword
                       username:(NSString *)username

@@ -18,6 +18,7 @@ import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactMethod
+import com.facebook.react.bridge.WritableMap
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
@@ -125,8 +126,6 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
     deviceName: String,
     transport: String,
     security: Int,
-    address: String?,
-    primaryServiceUuid: String?,
     proofOfPossesion: String?,
     softAPPassword: String?,
     username: String?,
@@ -144,24 +143,81 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       else -> ESPConstants.SecurityType.SECURITY_2
     }
 
-    val espDevice = espProvisionManager.createESPDevice(transportEnum, securityEnum)
+    var espDevice = espDevices[deviceName!!]
+    if (espDevice == null) {
+      espDevice = espProvisionManager.createESPDevice(transportEnum, securityEnum)
+    }
 
-    espDevice.bluetoothDevice = bluetoothAdapter.getRemoteDevice(address)
+    var bleDevice = espDevice?.bluetoothDevice
+    if (bleDevice == null) {
+      searchESPDevices(deviceName, transport, security, object : Promise {
+        override fun resolve(p0: Any?) {
+          val espDevices = p0 as Array<ESPDevice>
+
+          if (espDevices.size != 1) {
+            promise?.reject(Error("Device not found."))
+          }
+
+          bleDevice = espDevices[0].bluetoothDevice
+        }
+
+        override fun reject(p0: String?, p1: String?) {
+          promise?.reject(p0, p1)
+        }
+
+        override fun reject(p0: String?, p1: Throwable?) {
+          promise?.reject(p0, p1)
+        }
+
+        override fun reject(p0: String?, p1: String?, p2: Throwable?) {
+          promise?.reject(p0, p1, p2)
+        }
+
+        override fun reject(p0: Throwable?) {
+          promise?.reject(p0)
+        }
+
+        override fun reject(p0: Throwable?, p1: WritableMap?) {
+          promise?.reject(p0, p1)
+        }
+
+        override fun reject(p0: String?, p1: WritableMap) {
+          promise?.reject(p0, p1)
+        }
+
+        override fun reject(p0: String?, p1: Throwable?, p2: WritableMap?) {
+          promise?.reject(p0, p1, p2)
+        }
+
+        override fun reject(p0: String?, p1: String?, p2: WritableMap) {
+          promise?.reject(p0, p1, p2)
+        }
+
+        override fun reject(p0: String?, p1: String?, p2: Throwable?, p3: WritableMap?) {
+          promise?.reject(p0, p1, p2, p3)
+        }
+
+        @Deprecated("Deprecated in Java")
+        override fun reject(p0: String?) {
+          promise?.reject(p0)
+        }
+
+      })
+    }
+
+    espDevice!!.bluetoothDevice = bleDevice
     espDevice.deviceName = deviceName
     espDevice.proofOfPossession = proofOfPossesion
-    espDevice.primaryServiceUuid = primaryServiceUuid
 
     espDevices[deviceName] = espDevice
 
     val result = Arguments.createMap()
-    result.putString("name", espDevice?.deviceName)
-    result.putArray("capabilities", Arguments.fromList(espDevice?.deviceCapabilities))
+    result.putString("name", espDevice.deviceName)
+    result.putArray("capabilities", Arguments.fromList(espDevice.deviceCapabilities))
     result.putInt("security", security)
     result.putString("transport", transport)
-    result.putString("username", espDevice?.userName)
-    result.putString("versionInfo", espDevice?.versionInfo)
-    result.putString("address", address)
-    result.putString("primaryServiceUuid", primaryServiceUuid)
+    result.putString("username", espDevice.userName)
+    result.putString("versionInfo", espDevice.versionInfo)
 
     promise?.resolve(result)
   }
