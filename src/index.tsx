@@ -1,10 +1,9 @@
 import { NativeModules, Platform } from 'react-native';
 import { Buffer } from 'buffer';
+import { ESPSecurity, ESPTransport } from './types';
 import type {
   ESPDeviceInterface,
   ESPWifiList,
-  ESPSecurity,
-  ESPTransport,
   ESPStatusResponse,
 } from './types';
 
@@ -138,3 +137,10 @@ export class ESPProvisionManager {
     return EspIdfProvisioning.stopESPDevicesSearch();
   }
 }
+
+export { ESPSecurity, ESPTransport } from './types';
+export type {
+  ESPDeviceInterface,
+  ESPWifiList,
+  ESPStatusResponse,
+} from './types';
