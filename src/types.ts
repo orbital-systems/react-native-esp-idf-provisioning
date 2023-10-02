@@ -1,15 +1,15 @@
-export enum ESPTransport {
+export const enum ESPTransport {
   ble = 'ble',
   softap = 'softap',
 }
 
-export enum ESPSecurity {
+export const enum ESPSecurity {
   unsecure = 0,
   secure = 1,
   secure2 = 2,
 }
 
-export enum ESPWifiAuthMode {
+export const enum ESPWifiAuthMode {
   open = 0,
   wep = 1,
   wpa2Enterprise = 2,
