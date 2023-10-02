@@ -24,8 +24,6 @@ export interface ESPDeviceInterface {
   transport: ESPTransport;
   connected?: boolean;
   username?: string;
-  address?: string;
-  primaryServiceUuid?: string;
   versionInfo?: { [key: string]: any }[];
   capabilities?: string[];
   advertisementData?: { [key: string]: any }[];

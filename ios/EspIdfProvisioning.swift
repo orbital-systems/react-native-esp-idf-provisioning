@@ -48,8 +48,8 @@ class EspIdfProvisioning: NSObject {
         ESPProvisionManager.shared.stopESPDevicesSearch()
     }
 
-    @objc(createESPDevice:transport:security:address:primaryServiceUuid:proofOfPossession:softAPPassword:username:resolve:reject:)
-    func createESPDevice(deviceName: String, transport: String, security: Int, address: String? = nil, primaryServiceUuid: String? = nil, proofOfPossession: String? = nil, softAPPassword: String? = nil, username: String? = nil, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+    @objc(createESPDevice:transport:security:proofOfPossession:softAPPassword:username:resolve:reject:)
+    func createESPDevice(deviceName: String, transport: String, security: Int, proofOfPossession: String? = nil, softAPPassword: String? = nil, username: String? = nil, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         let transport = ESPTransport(rawValue: transport) ?? ESPTransport.ble
         let security = ESPSecurity(rawValue: security)
 

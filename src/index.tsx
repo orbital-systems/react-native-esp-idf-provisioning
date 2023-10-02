@@ -39,21 +39,11 @@ export class ESPDevice implements ESPDeviceInterface {
   capabilities?: string[];
   versionInfo?: { [key: string]: any }[];
   advertisementData?: { [key: string]: any }[];
-  address?: string;
-  primaryServiceUuid?: string;
 
-  constructor({
-    name,
-    transport,
-    security,
-    address,
-    primaryServiceUuid,
-  }: ESPDeviceInterface) {
+  constructor({ name, transport, security }: ESPDeviceInterface) {
     this.name = name;
     this.transport = transport;
     this.security = security;
-    this.address = address;
-    this.primaryServiceUuid = primaryServiceUuid;
   }
 
   async connect(
@@ -65,8 +55,6 @@ export class ESPDevice implements ESPDeviceInterface {
       this.name,
       this.transport,
       this.security,
-      this.address,
-      this.primaryServiceUuid,
       proofOfPossesion,
       softAPPassword,
       username
@@ -84,7 +72,6 @@ export class ESPDevice implements ESPDeviceInterface {
 
   sendData(path: string, data: string): Promise<string> {
     const base64Data = Buffer.from(data).toString('base64');
-    console.info(`Sending data to ${this.name}: ${base64Data}`);
     return EspIdfProvisioning.sendData(this.name, path, base64Data).then(
       (returnData: string) => Buffer.from(returnData, 'base64').toString('utf8')
     );
