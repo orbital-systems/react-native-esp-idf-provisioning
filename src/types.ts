@@ -22,7 +22,7 @@ export interface ESPDeviceInterface {
   name: string;
   security: ESPSecurity;
   transport: ESPTransport;
-  connected: boolean;
+  connected?: boolean;
   username?: string;
   address?: string;
   primaryServiceUuid?: string;
