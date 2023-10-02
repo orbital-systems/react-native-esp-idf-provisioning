@@ -35,7 +35,7 @@ export class ESPDevice implements ESPDeviceInterface {
   name: string;
   transport: ESPTransport;
   security: ESPSecurity;
-  connected: boolean = false;
+  connected?: boolean;
   capabilities?: string[];
   versionInfo?: { [key: string]: any }[];
   advertisementData?: { [key: string]: any }[];
