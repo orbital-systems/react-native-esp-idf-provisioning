@@ -12,8 +12,10 @@ import {
 import {
   ESPProvisionManager,
   ESPDevice,
-} from 'react-native-esp-idf-provisioning';
-import { ESPSecurity, ESPTransport, type ESPWifiList } from '../../src/types';
+  ESPTransport,
+  ESPSecurity,
+  type ESPWifiList,
+} from '@orbital-systems/react-native-esp-idf-provisioning';
 
 export default function App() {
   const [devices, setDevices] = React.useState<ESPDevice[]>();

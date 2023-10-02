@@ -2,7 +2,7 @@
   "compilerOptions": {
     "rootDir": ".",
     "paths": {
-      "react-native-esp-idf-provisioning": ["./src/index"]
+      "@orbital-systems/react-native-esp-idf-provisioning": ["./src/index"]
     },
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
