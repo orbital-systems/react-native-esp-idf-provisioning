@@ -149,7 +149,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
     }
 
     var bleDevice = espDevice?.bluetoothDevice
-    if (bleDevice == null) {
+    if (bleDevice?.uuids == null) {
       searchESPDevices(deviceName, transport, security, object : Promise {
         override fun resolve(p0: Any?) {
           val espDevices = p0 as Array<ESPDevice>
