@@ -143,22 +143,28 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       else -> ESPConstants.SecurityType.SECURITY_2
     }
 
-    var espDevice = espDevices[deviceName!!]
+    var espDevice = espDevices[deviceName]
     if (espDevice == null) {
       espDevice = espProvisionManager.createESPDevice(transportEnum, securityEnum)
     }
 
-    var bleDevice = espDevice?.bluetoothDevice
+    val bleDevice = espDevice?.bluetoothDevice
     if (bleDevice?.uuids == null) {
       searchESPDevices(deviceName, transport, security, object : Promise {
         override fun resolve(p0: Any?) {
-          val espDevices = p0 as Array<ESPDevice>
-
-          if (espDevices.size != 1) {
+          if (espDevices[deviceName] == null) {
             promise?.reject(Error("Device not found."))
           }
 
-          bleDevice = espDevices[0].bluetoothDevice
+          val result = Arguments.createMap()
+          result.putString("name", espDevices[deviceName]?.deviceName)
+          result.putArray("capabilities", Arguments.fromList(espDevices[deviceName]?.deviceCapabilities))
+          result.putInt("security", security)
+          result.putString("transport", transport)
+          result.putString("username", espDevices[deviceName]?.userName)
+          result.putString("versionInfo", espDevices[deviceName]?.versionInfo)
+
+          promise?.resolve(result)
         }
 
         override fun reject(p0: String?, p1: String?) {
@@ -203,23 +209,23 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
         }
 
       })
+    } else {
+      espDevice!!.bluetoothDevice = bleDevice
+      espDevice.deviceName = deviceName
+      espDevice.proofOfPossession = proofOfPossesion
+
+      espDevices[deviceName] = espDevice
+
+      val result = Arguments.createMap()
+      result.putString("name", espDevice.deviceName)
+      result.putArray("capabilities", Arguments.fromList(espDevice.deviceCapabilities))
+      result.putInt("security", security)
+      result.putString("transport", transport)
+      result.putString("username", espDevice.userName)
+      result.putString("versionInfo", espDevice.versionInfo)
+
+      promise?.resolve(result)
     }
-
-    espDevice!!.bluetoothDevice = bleDevice
-    espDevice.deviceName = deviceName
-    espDevice.proofOfPossession = proofOfPossesion
-
-    espDevices[deviceName] = espDevice
-
-    val result = Arguments.createMap()
-    result.putString("name", espDevice.deviceName)
-    result.putArray("capabilities", Arguments.fromList(espDevice.deviceCapabilities))
-    result.putInt("security", security)
-    result.putString("transport", transport)
-    result.putString("username", espDevice.userName)
-    result.putString("versionInfo", espDevice.versionInfo)
-
-    promise?.resolve(result)
   }
 
   @SuppressLint("MissingPermission")
