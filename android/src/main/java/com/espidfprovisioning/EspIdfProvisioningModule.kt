@@ -1,11 +1,14 @@
 package com.espidfprovisioning
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.ScanResult
 import android.content.Context
-import com.espressif.provisioning.DeviceConnectionEvent;
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import com.espressif.provisioning.DeviceConnectionEvent
 import com.espressif.provisioning.ESPConstants
 import com.espressif.provisioning.ESPDevice
 import com.espressif.provisioning.ESPProvisionManager
@@ -42,6 +45,14 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
   @SuppressLint("MissingPermission")
   @ReactMethod
   override fun searchESPDevices(devicePrefix: String, transport: String, security: Int, promise: Promise?) {
+    // Permission checks
+    if (ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED ||
+      ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.BLUETOOTH_ADMIN) != PackageManager.PERMISSION_GRANTED ||
+      ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+      promise?.reject(Error("Missing one of the following permissions: BLUETOOTH, BLUETOOTH_ADMIN, ACCESS_FINE_LOCATION"))
+      return
+    }
+
     val transportEnum = when (transport) {
       "softap" -> ESPConstants.TransportType.TRANSPORT_SOFTAP
       "ble" -> ESPConstants.TransportType.TRANSPORT_BLE
@@ -70,12 +81,12 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
         val deviceName = scanResult?.scanRecord?.deviceName
 
         // No device name
-        if (deviceName?.isNullOrEmpty() == true) {
+        if (deviceName.isNullOrEmpty()) {
           return
         }
 
         var serviceUuid: String? = null
-        if (scanResult?.scanRecord?.serviceUuids != null && scanResult.scanRecord?.serviceUuids?.size!! > 0) {
+        if (scanResult.scanRecord?.serviceUuids != null && scanResult.scanRecord?.serviceUuids?.size!! > 0) {
           serviceUuid = scanResult.scanRecord?.serviceUuids?.get(0).toString()
         }
 
@@ -117,6 +128,14 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
   @SuppressLint("MissingPermission")
   @ReactMethod
   override fun stopESPDevicesSearch() {
+    // Permission checks
+    if (ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED ||
+      ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.BLUETOOTH_ADMIN) != PackageManager.PERMISSION_GRANTED ||
+      ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+      // If we don't have permissions we are probably not scanning either, so just return
+      return
+    }
+
     espProvisionManager.stopBleScan()
   }
 
@@ -131,6 +150,12 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
     username: String?,
     promise: Promise?
   ) {
+    // Permission checks
+    if (ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+      promise?.reject(Error("Missing one of the following permissions: BLUETOOTH_CONNECT"))
+      return
+    }
+
     val transportEnum = when (transport) {
       "softap" -> ESPConstants.TransportType.TRANSPORT_SOFTAP
       "ble" -> ESPConstants.TransportType.TRANSPORT_BLE
@@ -145,7 +170,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
 
     // If no ESP device found in list (no scan has been performed), create a new one
     if (espDevices[deviceName] == null) {
-      var espDevice = espProvisionManager.createESPDevice(transportEnum, securityEnum)
+      val espDevice = espProvisionManager.createESPDevice(transportEnum, securityEnum)
       var bleDevice = espDevice?.bluetoothDevice
 
       // If the bluetooth device does not contain service uuids, try using the bonded
@@ -232,7 +257,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
         promise?.reject(p0, p1, p2, p3)
       }
 
-      @Deprecated("Deprecated in Java")
+      @Deprecated("Deprecated in Java", ReplaceWith("promise?.reject(p0)"))
       override fun reject(p0: String?) {
         promise?.reject(p0)
       }
@@ -247,7 +272,18 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       return
     }
 
-    espDevices[deviceName]!!.connectToDevice()
+    if (espDevices[deviceName]?.transportType == ESPConstants.TransportType.TRANSPORT_SOFTAP) {
+      // Permission checks
+      if (ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.CHANGE_WIFI_STATE) != PackageManager.PERMISSION_GRANTED ||
+        ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.ACCESS_WIFI_STATE) != PackageManager.PERMISSION_GRANTED ||
+        ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.ACCESS_NETWORK_STATE) != PackageManager.PERMISSION_GRANTED ||
+        ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        promise?.reject(Error("Missing one of the following permissions: CHANGE_WIFI_STATE, ACCESS_WIFI_STATE, ACCESS_NETWORK_STATE, ACCESS_FINE_LOCATION"))
+        return
+      }
+    }
+
+    espDevices[deviceName]?.connectToDevice()
 
     EventBus.getDefault().register(object {
       @Subscribe(threadMode = ThreadMode.MAIN)
@@ -279,11 +315,11 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       return
     }
 
-    val data = Base64.getDecoder().decode(data)
-    espDevices[deviceName]!!.sendDataToCustomEndPoint(path, data, object : ResponseListener {
+    val decodedData = Base64.getDecoder().decode(data)
+    espDevices[deviceName]?.sendDataToCustomEndPoint(path, decodedData, object : ResponseListener {
       override fun onSuccess(returnData: ByteArray?) {
-        val returnData = Base64.getEncoder().encode(returnData).toString(Charsets.UTF_8)
-        promise?.resolve(returnData)
+        val encodedData = Base64.getEncoder().encode(returnData).toString(Charsets.UTF_8)
+        promise?.resolve(encodedData)
       }
 
       override fun onFailure(e: Exception?) {
@@ -299,7 +335,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       return
     }
 
-    promise?.resolve(espDevices[deviceName]!!.proofOfPossession)
+    promise?.resolve(espDevices[deviceName]?.proofOfPossession)
   }
 
   @ReactMethod
@@ -309,11 +345,11 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       return
     }
 
-    espDevices[deviceName]!!.scanNetworks(object : WiFiScanListener {
+    espDevices[deviceName]?.scanNetworks(object : WiFiScanListener {
       override fun onWifiListReceived(wifiList: ArrayList<WiFiAccessPoint>?) {
         val resultArray = Arguments.createArray()
 
-        wifiList!!.forEach { item ->
+        wifiList?.forEach { item ->
           val resultMap = Arguments.createMap()
           resultMap.putString("ssid", item.wifiName)
           resultMap.putInt("auth", item.security)
@@ -386,10 +422,10 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       return
     }
 
-    espDevices[deviceName]!!.initSession(object : ResponseListener {
+    espDevices[deviceName]?.initSession(object : ResponseListener {
       override fun onSuccess(returnData: ByteArray?) {
-        val returnData = Base64.getEncoder().encode(returnData)
-        promise?.resolve(returnData)
+        val encodedData = Base64.getEncoder().encode(returnData)
+        promise?.resolve(encodedData)
       }
 
       override fun onFailure(e: Exception?) {
