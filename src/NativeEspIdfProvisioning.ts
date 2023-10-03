@@ -20,8 +20,6 @@ export interface Spec extends TurboModule {
     deviceName: string,
     transport: ESPTransport,
     security: ESPSecurity,
-    address?: string,
-    primaryServiceUuid?: string,
     proofOfPossesion?: string,
     softAPPassword?: string,
     username?: string
