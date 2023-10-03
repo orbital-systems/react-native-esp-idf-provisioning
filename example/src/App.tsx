@@ -58,8 +58,8 @@ export default function App() {
         security: ESPSecurity.secure,
       });
 
-      const proofOfPossesion = '2D2YDA6EPKKU';
-      const response = await espDevice.connect(proofOfPossesion);
+      const proofOfPossession = '2D2YDA6EPKKU';
+      const response = await espDevice.connect(proofOfPossession);
       console.info(response);
 
       const espWifiList = await espDevice.scanWifiList();
@@ -73,9 +73,9 @@ export default function App() {
 
   const onConnect = React.useCallback(async (device: ESPDevice) => {
     try {
-      const proofOfPossesion = '2D2YDA6EPKKU';
+      const proofOfPossession = '2D2YDA6EPKKU';
       setIsLoading(true);
-      const response = await device.connect(proofOfPossesion);
+      const response = await device.connect(proofOfPossession);
       console.info(response);
       setIsLoading(false);
     } catch (error) {
