@@ -1,6 +1,9 @@
 # react-native-esp-idf-provisioning
 
-Android (not yet) and iOS wrapper for ESP IDF provisioning.
+> Android and iOS bridge for ESP IDF provisioning. Provides a unified interface for device-agnostic BLE and SoftAP provisioning using
+
+- https://github.com/espressif/esp-idf-provisioning-android
+- https://github.com/espressif/esp-idf-provisioning-ios
 
 ## Installation
 
@@ -22,7 +25,7 @@ import {
 // Get devices...
 const devices = ESPProvisionManager.searchESPDevices('prefix');
 // ... and select device (using picklist, dropdown, w/e)
-const device = devices[0];
+const device: ESPDevice = devices[0];
 
 // Method 2.
 // If you know device name and transport/security settings, create a device class instance
@@ -32,9 +35,18 @@ const device = new ESPDevice({
   security: ESPSecurity.secure2,
 });
 
-// Connect to device with proofOfPossesion
-const proofOfPossesion = 'pop';
+// Connect to device with proofOfPossession
+const proofOfPossession = 'pop';
 await device.connect(proofOfPosession);
+
+// Connect to device with proofOfPossession + username
+const proofOfPossession = 'pop';
+const username = 'username';
+await device.connect(proofOfPosession, null, username);
+
+// Connect to device with softAP password
+const softAPPassword = 'password';
+await device.connect(null, softAPPassword, null);
 
 // Get wifi list
 const wifiList = await device.scanWifiList();
