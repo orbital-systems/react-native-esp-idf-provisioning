@@ -49,6 +49,24 @@ export default function App() {
     }
   }, []);
 
+  const onConnectWithoutSearch = React.useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const espDevice = new ESPDevice({
+        name: 'NAME',
+        transport: ESPTransport.ble,
+        security: ESPSecurity.secure,
+      });
+
+      const response = await espDevice.connect();
+      console.info(response);
+      setIsLoading(false);
+    } catch (error) {
+      setIsLoading(false);
+      console.error(error);
+    }
+  }, []);
+
   const onConnect = React.useCallback(async (device: ESPDevice) => {
     try {
       const proofOfPossesion = 'POP';
@@ -166,6 +184,10 @@ export default function App() {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.text}>{isLoading ? 'Loading...' : 'Ready'}</Text>
       <Button onPress={onSearchESPDevices} title="Search ESP Devices" />
+      <Button
+        onPress={onConnectWithoutSearch}
+        title="Connect without searching"
+      />
       {devices?.map((device) => (
         <View key={device.name} style={styles.device}>
           <Text style={styles.text}>{device.name}</Text>
