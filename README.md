@@ -1,6 +1,6 @@
 # react-native-esp-idf-provisioning
 
-> Android and iOS bridge for ESP IDF provisioning. Provides a unified interface for device-agnostic BLE and SoftAP provisioning using
+Android and iOS bridge for ESP IDF provisioning. Provides a unified interface for BLE and SoftAP provisioning using the libraries provided by Espressif:
 
 - https://github.com/espressif/esp-idf-provisioning-android
 - https://github.com/espressif/esp-idf-provisioning-ios
