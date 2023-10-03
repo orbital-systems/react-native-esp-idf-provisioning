@@ -125,7 +125,7 @@ export class ESPProvisionManager {
   }
 }
 
-export { ESPSecurity, ESPTransport } from './types';
+export { ESPSecurity, ESPTransport, ESPWifiAuthMode } from './types';
 export type {
   ESPDeviceInterface,
   ESPWifiList,
