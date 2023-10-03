@@ -58,8 +58,12 @@ export default function App() {
         security: ESPSecurity.secure,
       });
 
-      const response = await espDevice.connect();
+      const proofOfPossesion = 'POP';
+      const response = await espDevice.connect(proofOfPossesion);
       console.info(response);
+
+      const espWifiList = await espDevice.scanWifiList();
+      console.info(espWifiList);
       setIsLoading(false);
     } catch (error) {
       setIsLoading(false);

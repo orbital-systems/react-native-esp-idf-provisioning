@@ -7,6 +7,7 @@ import android.bluetooth.BluetoothManager
 import android.bluetooth.le.ScanResult
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
 import androidx.core.content.ContextCompat
 import com.espressif.provisioning.DeviceConnectionEvent
 import com.espressif.provisioning.ESPConstants
@@ -46,8 +47,8 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
   @ReactMethod
   override fun searchESPDevices(devicePrefix: String, transport: String, security: Int, promise: Promise?) {
     // Permission checks
-    if (ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED ||
-      ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.BLUETOOTH_ADMIN) != PackageManager.PERMISSION_GRANTED ||
+    if ((Build.VERSION.SDK_INT <= 30 && ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED) ||
+      (Build.VERSION.SDK_INT <= 30 && ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.BLUETOOTH_ADMIN) != PackageManager.PERMISSION_GRANTED) ||
       ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
       promise?.reject(Error("Missing one of the following permissions: BLUETOOTH, BLUETOOTH_ADMIN, ACCESS_FINE_LOCATION"))
       return
@@ -129,8 +130,8 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
   @ReactMethod
   override fun stopESPDevicesSearch() {
     // Permission checks
-    if (ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED ||
-      ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.BLUETOOTH_ADMIN) != PackageManager.PERMISSION_GRANTED ||
+    if ((Build.VERSION.SDK_INT <= 30 && ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED) ||
+      (Build.VERSION.SDK_INT <= 30 && ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.BLUETOOTH_ADMIN) != PackageManager.PERMISSION_GRANTED) ||
       ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
       // If we don't have permissions we are probably not scanning either, so just return
       return
@@ -145,7 +146,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
     deviceName: String,
     transport: String,
     security: Int,
-    proofOfPossesion: String?,
+    proofOfPossession: String?,
     softAPPassword: String?,
     username: String?,
     promise: Promise?
@@ -185,7 +186,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       if (bleDevice?.uuids != null) {
         espDevice.bluetoothDevice = bleDevice
         espDevice.deviceName = deviceName
-        espDevice.proofOfPossession = proofOfPossesion
+        espDevice.proofOfPossession = proofOfPossession
 
         espDevices[deviceName] = espDevice
 
@@ -209,6 +210,9 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
         if (espDevices[deviceName] == null) {
           promise?.reject(Error("Device not found."))
         }
+
+        // Configure proof of possession
+        espDevices[deviceName]?.proofOfPossession = proofOfPossession
 
         val result = Arguments.createMap()
         result.putString("name", espDevices[deviceName]?.deviceName)
@@ -329,7 +333,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
   }
 
   @ReactMethod
-  override fun getProofOfPossesion(deviceName: String, promise: Promise?) {
+  override fun getProofOfPossession(deviceName: String, promise: Promise?) {
     if (espDevices[deviceName] == null) {
       promise?.reject(Error("No ESP device found. Call createESPDevice first."))
       return
