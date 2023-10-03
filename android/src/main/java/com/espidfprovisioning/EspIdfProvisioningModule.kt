@@ -143,89 +143,100 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       else -> ESPConstants.SecurityType.SECURITY_2
     }
 
-    var espDevice = espDevices[deviceName]
-    if (espDevice == null) {
-      espDevice = espProvisionManager.createESPDevice(transportEnum, securityEnum)
+    // If no ESP device found in list (no scan has been performed), create a new one
+    if (espDevices[deviceName] == null) {
+      var espDevice = espProvisionManager.createESPDevice(transportEnum, securityEnum)
+      var bleDevice = espDevice?.bluetoothDevice
+
+      // If the bluetooth device does not contain service uuids, try using the bonded
+      // one (if it exists)
+      if (bleDevice?.uuids == null) {
+        bleDevice = bluetoothAdapter.bondedDevices.find {
+          bondedDevice -> bondedDevice.name == deviceName
+        }
+      }
+
+      // If the bluetooth device exists and contains service uuids, we will be able to connect to it
+      if (bleDevice?.uuids != null) {
+        espDevice.bluetoothDevice = bleDevice
+        espDevice.deviceName = deviceName
+        espDevice.proofOfPossession = proofOfPossesion
+
+        espDevices[deviceName] = espDevice
+
+        val result = Arguments.createMap()
+        result.putString("name", espDevice.deviceName)
+        result.putArray("capabilities", Arguments.fromList(espDevice.deviceCapabilities))
+        result.putInt("security", security)
+        result.putString("transport", transport)
+        result.putString("username", espDevice.userName)
+        result.putString("versionInfo", espDevice.versionInfo)
+
+        promise?.resolve(result)
+        return
+      }
     }
 
-    val bleDevice = espDevice?.bluetoothDevice
-    if (bleDevice?.uuids == null) {
-      searchESPDevices(deviceName, transport, security, object : Promise {
-        override fun resolve(p0: Any?) {
-          if (espDevices[deviceName] == null) {
-            promise?.reject(Error("Device not found."))
-          }
-
-          val result = Arguments.createMap()
-          result.putString("name", espDevices[deviceName]?.deviceName)
-          result.putArray("capabilities", Arguments.fromList(espDevices[deviceName]?.deviceCapabilities))
-          result.putInt("security", security)
-          result.putString("transport", transport)
-          result.putString("username", espDevices[deviceName]?.userName)
-          result.putString("versionInfo", espDevices[deviceName]?.versionInfo)
-
-          promise?.resolve(result)
+    // Exhausted our other options, perform search in hope of finding the device
+    searchESPDevices(deviceName, transport, security, object : Promise {
+      override fun resolve(p0: Any?) {
+        // If search does not find the device, consider it not found
+        if (espDevices[deviceName] == null) {
+          promise?.reject(Error("Device not found."))
         }
 
-        override fun reject(p0: String?, p1: String?) {
-          promise?.reject(p0, p1)
-        }
+        val result = Arguments.createMap()
+        result.putString("name", espDevices[deviceName]?.deviceName)
+        result.putArray("capabilities", Arguments.fromList(espDevices[deviceName]?.deviceCapabilities))
+        result.putInt("security", security)
+        result.putString("transport", transport)
+        result.putString("username", espDevices[deviceName]?.userName)
+        result.putString("versionInfo", espDevices[deviceName]?.versionInfo)
 
-        override fun reject(p0: String?, p1: Throwable?) {
-          promise?.reject(p0, p1)
-        }
+        promise?.resolve(result)
+      }
 
-        override fun reject(p0: String?, p1: String?, p2: Throwable?) {
-          promise?.reject(p0, p1, p2)
-        }
+      override fun reject(p0: String?, p1: String?) {
+        promise?.reject(p0, p1)
+      }
 
-        override fun reject(p0: Throwable?) {
-          promise?.reject(p0)
-        }
+      override fun reject(p0: String?, p1: Throwable?) {
+        promise?.reject(p0, p1)
+      }
 
-        override fun reject(p0: Throwable?, p1: WritableMap?) {
-          promise?.reject(p0, p1)
-        }
+      override fun reject(p0: String?, p1: String?, p2: Throwable?) {
+        promise?.reject(p0, p1, p2)
+      }
 
-        override fun reject(p0: String?, p1: WritableMap) {
-          promise?.reject(p0, p1)
-        }
+      override fun reject(p0: Throwable?) {
+        promise?.reject(p0)
+      }
 
-        override fun reject(p0: String?, p1: Throwable?, p2: WritableMap?) {
-          promise?.reject(p0, p1, p2)
-        }
+      override fun reject(p0: Throwable?, p1: WritableMap?) {
+        promise?.reject(p0, p1)
+      }
 
-        override fun reject(p0: String?, p1: String?, p2: WritableMap) {
-          promise?.reject(p0, p1, p2)
-        }
+      override fun reject(p0: String?, p1: WritableMap) {
+        promise?.reject(p0, p1)
+      }
 
-        override fun reject(p0: String?, p1: String?, p2: Throwable?, p3: WritableMap?) {
-          promise?.reject(p0, p1, p2, p3)
-        }
+      override fun reject(p0: String?, p1: Throwable?, p2: WritableMap?) {
+        promise?.reject(p0, p1, p2)
+      }
 
-        @Deprecated("Deprecated in Java")
-        override fun reject(p0: String?) {
-          promise?.reject(p0)
-        }
+      override fun reject(p0: String?, p1: String?, p2: WritableMap) {
+        promise?.reject(p0, p1, p2)
+      }
 
-      })
-    } else {
-      espDevice!!.bluetoothDevice = bleDevice
-      espDevice.deviceName = deviceName
-      espDevice.proofOfPossession = proofOfPossesion
+      override fun reject(p0: String?, p1: String?, p2: Throwable?, p3: WritableMap?) {
+        promise?.reject(p0, p1, p2, p3)
+      }
 
-      espDevices[deviceName] = espDevice
-
-      val result = Arguments.createMap()
-      result.putString("name", espDevice.deviceName)
-      result.putArray("capabilities", Arguments.fromList(espDevice.deviceCapabilities))
-      result.putInt("security", security)
-      result.putString("transport", transport)
-      result.putString("username", espDevice.userName)
-      result.putString("versionInfo", espDevice.versionInfo)
-
-      promise?.resolve(result)
-    }
+      @Deprecated("Deprecated in Java")
+      override fun reject(p0: String?) {
+        promise?.reject(p0)
+      }
+    })
   }
 
   @SuppressLint("MissingPermission")
