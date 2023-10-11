@@ -81,11 +81,11 @@ export class ESPDevice implements ESPDeviceInterface {
     return EspIdfProvisioning.isSessionEstablished(this.name);
   }
 
-  getProofOfPossession(): string | undefined {
+  getProofOfPossession(): Promise<string | undefined> {
     return EspIdfProvisioning.getProofOfPossession(this.name);
   }
 
-  scanWifiList(): ESPWifiList[] {
+  scanWifiList(): Promise<ESPWifiList[]> {
     return EspIdfProvisioning.scanWifiList(this.name);
   }
 
