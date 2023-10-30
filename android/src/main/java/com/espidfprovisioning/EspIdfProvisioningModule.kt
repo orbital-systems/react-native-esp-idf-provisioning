@@ -356,8 +356,8 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
         wifiList?.forEach { item ->
           val resultMap = Arguments.createMap()
           resultMap.putString("ssid", item.wifiName)
+          resultMap.putInt("rssi", item.rssi)
           resultMap.putInt("auth", item.security)
-
           resultArray.pushMap(resultMap)
         }
 

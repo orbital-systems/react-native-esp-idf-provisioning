@@ -31,9 +31,10 @@ export interface ESPDeviceInterface {
 
 export interface ESPWifiList {
   ssid: string;
-  bssid: string;
+  rssi: number;
   auth: ESPWifiAuthMode;
-  channel: number;
+  bssid?: string;
+  channel?: number;
 }
 
 export interface ESPStatusResponse {

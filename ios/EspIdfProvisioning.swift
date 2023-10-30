@@ -152,7 +152,8 @@ class EspIdfProvisioning: NSObject {
 
             resolve(wifiList!.map {[
                 "ssid": $0.ssid,
-                "bssid": $0.bssid,
+                "bssid": $0.bssid.toHexString(),
+                "rssi": $0.rssi,
                 "auth": $0.auth.rawValue,
                 "channel": $0.channel
             ]})
