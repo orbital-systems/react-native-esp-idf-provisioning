@@ -5,6 +5,8 @@ Android and iOS bridge for ESP IDF provisioning. Provides a unified interface fo
 - https://github.com/espressif/esp-idf-provisioning-android
 - https://github.com/espressif/esp-idf-provisioning-ios
 
+SoftAP mode is not tested and probably does not work yet. Feel free to help with this. See [#6](https://github.com/orbital-systems/react-native-esp-idf-provisioning/issues/6).
+
 ## Installation
 
 ```sh
