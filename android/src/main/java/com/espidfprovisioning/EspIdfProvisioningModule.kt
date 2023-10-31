@@ -68,6 +68,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
 
     espDevices.clear()
 
+    val invoked = false
     espProvisionManager.searchBleEspDevices(devicePrefix, object : BleScanListener {
       override fun scanStartFailed() {
         promise?.reject(Error("Scan could not be started."))
@@ -101,6 +102,11 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       }
 
       override fun scanCompleted() {
+        if (espDevices.size == 0) {
+          promise?.reject(Error("No bluetooth device found with given prefix"))
+          return
+        }
+
         val resultArray = Arguments.createArray()
 
         espDevices.values.forEach { espDevice ->
