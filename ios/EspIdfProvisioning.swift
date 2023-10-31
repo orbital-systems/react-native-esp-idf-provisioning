@@ -20,10 +20,15 @@ class EspIdfProvisioning: NSObject {
         let security = ESPSecurity(rawValue: security)
 
         self.espDevices.removeAll()
-
+        
+        var invoked = false
         ESPProvisionManager.shared.searchESPDevices(devicePrefix: devicePrefix, transport: transport, security: security) { espDevices, error in
+            // Prevent multiple callback invokation error 
+            guard !invoked else { return }
+
             if error != nil {
                 reject("error", error?.description, nil)
+                invoked = true
                 return
             }
 
@@ -40,6 +45,7 @@ class EspIdfProvisioning: NSObject {
                 "username": $0.username as Any,
                 "versionInfo": $0.versionInfo ?? {}
             ]})
+            invoked = true
         }
     }
 
@@ -53,9 +59,14 @@ class EspIdfProvisioning: NSObject {
         let transport = ESPTransport(rawValue: transport) ?? ESPTransport.ble
         let security = ESPSecurity(rawValue: security)
 
+        var invoked = false
         ESPProvisionManager.shared.createESPDevice(deviceName: deviceName, transport: transport, security: security, proofOfPossession: proofOfPossession, softAPPassword: softAPPassword, username: username) { espDevice, error in
+            // Prevent multiple callback invokation error
+            guard !invoked else { return }
+
             if error != nil {
                 reject("error", error?.description, nil)
+                invoked = true
                 return
             }
 
@@ -70,6 +81,7 @@ class EspIdfProvisioning: NSObject {
                 "username": espDevice!.username as Any,
                 "versionInfo": espDevice!.versionInfo ?? {}
             ])
+            invoked = true
         }
     }
 
@@ -80,16 +92,23 @@ class EspIdfProvisioning: NSObject {
             return
         }
 
+        var invoked = false
         espDevices[deviceName]!.connect(completionHandler: { status in
+            // Prevent multiple callback invokation error
+            guard !invoked else { return }
+
             switch status {
             case .connected:
                 resolve([
                     "status": "connected"
                 ])
+                invoked = true
             case .failedToConnect(let error):
                 reject("error", error.description, nil)
+                invoked = true
             case .disconnected:
                 reject("error", "Device disconnected.", nil)
+                invoked = true
             }
         })
     }
@@ -103,13 +122,19 @@ class EspIdfProvisioning: NSObject {
 
         let data: Data = data.data(using: .utf8)!
         if let data = Data(base64Encoded: data) {
+            var invoked = false
             self.espDevices[deviceName]!.sendData(path: path, data: data, completionHandler: { data, error in
+                // Prevent multiple callback invokation error
+                guard !invoked else { return }
+
                 if error != nil {
                     reject("error", error?.description, nil)
+                    invoked = true
                     return
                 }
 
                 resolve(data!.base64EncodedString())
+                invoked = true
             })
         } else {
             reject("error", "Data is not base64 encoded.",  nil)
@@ -132,8 +157,13 @@ class EspIdfProvisioning: NSObject {
             return
         }
 
+        var invoked = false
         self.espDevices[deviceName]!.delegate?.getProofOfPossesion(forDevice: self.espDevices[deviceName]!, completionHandler: { proofOfPossesion in
+            // Prevent multiple callback invokation error
+            guard !invoked else { return }
+
             resolve(proofOfPossesion)
+            invoked = true
         })
     }
 
@@ -144,9 +174,14 @@ class EspIdfProvisioning: NSObject {
             return
         }
 
+        var invoked = false
         self.espDevices[deviceName]!.scanWifiList(completionHandler: { wifiList, error in
+            // Prevent multiple callback invokation error
+            guard !invoked else { return }
+
             if error != nil {
                 reject("error", error?.description, nil)
+                invoked = true
                 return
             }
 
@@ -157,6 +192,7 @@ class EspIdfProvisioning: NSObject {
                 "auth": $0.auth.rawValue,
                 "channel": $0.channel
             ]})
+            invoked = true
         })
     }
 
@@ -172,14 +208,20 @@ class EspIdfProvisioning: NSObject {
             return
         }
 
+        var invoked = false
         self.espDevices[deviceName]!.provision(ssid: ssid, passPhrase: passphrase, completionHandler: { status in
+            // Prevent multiple callback invokation error
+            guard !invoked else { return }
+
             switch status {
             case .success:
                 resolve([
                     "status": "success"
                 ])
+                invoked = true
             case .failure(let error):
                 reject("error", error.description, nil)
+                invoked = true
             case .configApplied:
                 break
             }
@@ -193,16 +235,23 @@ class EspIdfProvisioning: NSObject {
             return
         }
 
+        var invoked = false
         self.espDevices[deviceName]!.initialiseSession(sessionPath: sessionPath, completionHandler: { status in
+            // Prevent multiple callback invokation error
+            guard !invoked else { return }
+
             switch status {
             case .connected:
                 resolve([
                     "status": "connected"
                 ])
+                invoked = true
             case .failedToConnect(let error):
                 reject("error", error.description, nil)
+                invoked = true
             case .disconnected:
                 reject("error", "Device disconnected.", nil)
+                invoked = true
             }
         })
     }
