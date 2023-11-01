@@ -7,6 +7,8 @@ Android and iOS bridge for ESP IDF provisioning. Provides a unified interface fo
 
 SoftAP mode is not tested and probably does not work yet. Feel free to help with this. See [#6](https://github.com/orbital-systems/react-native-esp-idf-provisioning/issues/6).
 
+QR code scanning is deliberately not supported. This can be done using other react-native libraries.
+
 ## Installation
 
 ```sh
