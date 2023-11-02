@@ -9,6 +9,8 @@ SoftAP mode is not tested and probably does not work yet. Feel free to help with
 
 QR code scanning is deliberately not supported. This can be done using other react-native libraries.
 
+![Provisioning](provisioning.gif)
+
 ## Installation
 
 ```sh
