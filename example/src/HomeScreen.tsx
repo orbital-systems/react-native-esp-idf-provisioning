@@ -19,13 +19,31 @@ export function HomeScreen(
 ) {
   const [devices, setDevices] = React.useState<ESPDevice[] | undefined>();
   const [isLoading, setLoading] = React.useState<boolean>(false);
-  const [prefix, setPrefix] = React.useState<string | undefined | null>('');
+  const [prefix, setPrefix] = React.useState<string>('');
+  const [transport, setTransport] = React.useState<ESPTransport>(
+    ESPTransport.ble
+  );
+  const [security, setSecurity] = React.useState<ESPSecurity>(
+    ESPSecurity.secure2
+  );
   const insets = useSafeAreaInsets();
 
   useFocusEffect(
     React.useCallback(() => {
       DefaultPreference.get('prefix').then((value) => {
-        setPrefix(value);
+        if (typeof value === 'string') {
+          setPrefix(value);
+        }
+      });
+      DefaultPreference.get('transport').then((value) => {
+        if (typeof value === 'string') {
+          setTransport(value as ESPTransport);
+        }
+      });
+      DefaultPreference.get('security').then((value) => {
+        if (typeof value === 'string') {
+          setSecurity(Number(value) as ESPSecurity);
+        }
       });
     }, [])
   );
@@ -50,8 +68,8 @@ export function HomeScreen(
       setDevices(undefined);
       const espDevices = await ESPProvisionManager.searchESPDevices(
         prefix ?? '',
-        ESPTransport.ble,
-        ESPSecurity.secure
+        transport,
+        security
       );
       setLoading(false);
       setDevices(espDevices);
@@ -60,7 +78,7 @@ export function HomeScreen(
       setLoading(false);
       console.error(error);
     }
-  }, [prefix]);
+  }, [prefix, security, transport]);
 
   const espSecurityToString = {
     [ESPSecurity.unsecure]: 'Insecure',
