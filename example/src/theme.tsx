@@ -84,6 +84,7 @@ export const theme = createTheme({
       h4Style: {
         fontSize: 16,
         color: lightColors.black,
+        fontWeight: 'normal',
         fontVariant: ['small-caps'],
         textTransform: 'lowercase',
       },
