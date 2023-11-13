@@ -84,7 +84,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
     // Permission checks
     if (
       hasBluetoothPermissions() == false ||
-      !hasFineLocationPermission() == false
+      hasFineLocationPermission() == false
     ) {
       promise?.reject(Error("Missing one of the following permissions: BLUETOOTH, BLUETOOTH_ADMIN, BLUETOOTH_CONNECT, BLUETOOTH_SCAN, ACCESS_FINE_LOCATION"))
       return
