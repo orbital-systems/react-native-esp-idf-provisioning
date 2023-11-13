@@ -193,6 +193,9 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
         espDevice.bluetoothDevice = bleDevice
         espDevice.deviceName = deviceName
         espDevice.proofOfPossession = proofOfPossession
+        if (username != null) {
+          espDevice.userName = username
+        }
 
         espDevices[deviceName] = espDevice
 
@@ -219,6 +222,9 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
 
         // Configure proof of possession
         espDevices[deviceName]?.proofOfPossession = proofOfPossession
+        if (username != null) {
+          espDevices[deviceName]?.userName = username
+        }
 
         val result = Arguments.createMap()
         result.putString("name", espDevices[deviceName]?.deviceName)
