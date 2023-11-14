@@ -43,14 +43,50 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
   private val espDevices = HashMap<String, ESPDevice>()
   private val bluetoothAdapter = (context?.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter
 
+  private fun hasBluetoothPermissions(): Boolean {
+    if (Build.VERSION.SDK_INT <= 30) {
+      if (
+        ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED &&
+        ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.BLUETOOTH_ADMIN) == PackageManager.PERMISSION_GRANTED
+      ) {
+        return true
+      } else {
+        return false
+      }
+    }
+    else if (
+      ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED &&
+      ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED
+    ) {
+      return true
+    }
+    return false
+  }
+
+  private fun hasWifiPermission(): Boolean {
+    if (
+      ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.CHANGE_WIFI_STATE) == PackageManager.PERMISSION_GRANTED &&
+      ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.ACCESS_WIFI_STATE) == PackageManager.PERMISSION_GRANTED &&
+      ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.ACCESS_NETWORK_STATE) == PackageManager.PERMISSION_GRANTED
+    ) {
+      return true
+    }
+    return false
+  }
+
+  private fun hasFineLocationPermission(): Boolean {
+    return ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+  }
+
   @SuppressLint("MissingPermission")
   @ReactMethod
   override fun searchESPDevices(devicePrefix: String, transport: String, security: Int, promise: Promise?) {
     // Permission checks
-    if ((Build.VERSION.SDK_INT <= 30 && ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED) ||
-      (Build.VERSION.SDK_INT <= 30 && ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.BLUETOOTH_ADMIN) != PackageManager.PERMISSION_GRANTED) ||
-      ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-      promise?.reject(Error("Missing one of the following permissions: BLUETOOTH, BLUETOOTH_ADMIN, ACCESS_FINE_LOCATION"))
+    if (
+      hasBluetoothPermissions() == false ||
+      hasFineLocationPermission() == false
+    ) {
+      promise?.reject(Error("Missing one of the following permissions: BLUETOOTH, BLUETOOTH_ADMIN, BLUETOOTH_CONNECT, BLUETOOTH_SCAN, ACCESS_FINE_LOCATION"))
       return
     }
 
@@ -136,9 +172,10 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
   @ReactMethod
   override fun stopESPDevicesSearch() {
     // Permission checks
-    if ((Build.VERSION.SDK_INT <= 30 && ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED) ||
-      (Build.VERSION.SDK_INT <= 30 && ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.BLUETOOTH_ADMIN) != PackageManager.PERMISSION_GRANTED) ||
-      ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+    if (
+      hasBluetoothPermissions() == false ||
+      hasFineLocationPermission() == false
+    ) {
       // If we don't have permissions we are probably not scanning either, so just return
       return
     }
@@ -158,8 +195,8 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
     promise: Promise?
   ) {
     // Permission checks
-    if (ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-      promise?.reject(Error("Missing one of the following permissions: BLUETOOTH_CONNECT"))
+    if (hasBluetoothPermissions() == false) {
+      promise?.reject(Error("Missing one of the following permissions: BLUETOOTH, BLUETOOTH_ADMIN, BLUETOOTH_CONNECT, BLUETOOTH_SCAN"))
       return
     }
 
@@ -290,10 +327,10 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
 
     if (espDevices[deviceName]?.transportType == ESPConstants.TransportType.TRANSPORT_SOFTAP) {
       // Permission checks
-      if (ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.CHANGE_WIFI_STATE) != PackageManager.PERMISSION_GRANTED ||
-        ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.ACCESS_WIFI_STATE) != PackageManager.PERMISSION_GRANTED ||
-        ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.ACCESS_NETWORK_STATE) != PackageManager.PERMISSION_GRANTED ||
-        ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+      if (
+        hasWifiPermission() == false ||
+        hasFineLocationPermission() == false
+      ) {
         promise?.reject(Error("Missing one of the following permissions: CHANGE_WIFI_STATE, ACCESS_WIFI_STATE, ACCESS_NETWORK_STATE, ACCESS_FINE_LOCATION"))
         return
       }
