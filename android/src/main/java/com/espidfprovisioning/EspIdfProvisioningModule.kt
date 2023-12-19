@@ -212,41 +212,52 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       else -> ESPConstants.SecurityType.SECURITY_2
     }
 
+    if (espDevices[deviceName] != null) {
+      val result = Arguments.createMap()
+      result.putString("name", espDevices[deviceName]?.deviceName)
+      result.putArray("capabilities", Arguments.fromList(espDevices[deviceName]?.deviceCapabilities))
+      result.putInt("security", security)
+      result.putString("transport", transport)
+      result.putString("username", espDevices[deviceName]?.userName)
+      result.putString("versionInfo", espDevices[deviceName]?.versionInfo)
+
+      promise?.resolve(result)
+      return
+    }
+
     // If no ESP device found in list (no scan has been performed), create a new one
-    if (espDevices[deviceName] == null) {
-      val espDevice = espProvisionManager.createESPDevice(transportEnum, securityEnum)
-      var bleDevice = espDevice?.bluetoothDevice
+    val espDevice = espProvisionManager.createESPDevice(transportEnum, securityEnum)
+    var bleDevice = espDevice?.bluetoothDevice
 
-      // If the bluetooth device does not contain service uuids, try using the bonded
-      // one (if it exists)
-      if (bleDevice?.uuids == null) {
-        bleDevice = bluetoothAdapter.bondedDevices.find {
-          bondedDevice -> bondedDevice.name == deviceName
-        }
+    // If the bluetooth device does not contain service uuids, try using the bonded
+    // one (if it exists)
+    if (bleDevice?.uuids == null) {
+      bleDevice = bluetoothAdapter.bondedDevices.find {
+        bondedDevice -> bondedDevice.name == deviceName
+      }
+    }
+
+    // If the bluetooth device exists and contains service uuids, we will be able to connect to it
+    if (bleDevice?.uuids != null) {
+      espDevice.bluetoothDevice = bleDevice
+      espDevice.deviceName = deviceName
+      espDevice.proofOfPossession = proofOfPossession
+      if (username != null) {
+        espDevice.userName = username
       }
 
-      // If the bluetooth device exists and contains service uuids, we will be able to connect to it
-      if (bleDevice?.uuids != null) {
-        espDevice.bluetoothDevice = bleDevice
-        espDevice.deviceName = deviceName
-        espDevice.proofOfPossession = proofOfPossession
-        if (username != null) {
-          espDevice.userName = username
-        }
+      espDevices[deviceName] = espDevice
 
-        espDevices[deviceName] = espDevice
+      val result = Arguments.createMap()
+      result.putString("name", espDevice.deviceName)
+      result.putArray("capabilities", Arguments.fromList(espDevice.deviceCapabilities))
+      result.putInt("security", security)
+      result.putString("transport", transport)
+      result.putString("username", espDevice.userName)
+      result.putString("versionInfo", espDevice.versionInfo)
 
-        val result = Arguments.createMap()
-        result.putString("name", espDevice.deviceName)
-        result.putArray("capabilities", Arguments.fromList(espDevice.deviceCapabilities))
-        result.putInt("security", security)
-        result.putString("transport", transport)
-        result.putString("username", espDevice.userName)
-        result.putString("versionInfo", espDevice.versionInfo)
-
-        promise?.resolve(result)
-        return
-      }
+      promise?.resolve(result)
+      return
     }
 
     // Exhausted our other options, perform search in hope of finding the device
