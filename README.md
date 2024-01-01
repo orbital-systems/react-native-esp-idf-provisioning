@@ -29,7 +29,15 @@ import {
 
 // Method 1.
 // Get devices...
-const devices = ESPProvisionManager.searchESPDevices('prefix');
+let prefix = 'PROV_';
+let transport = ESPTransport.ble;
+let security = ESPSecurity.secure2;
+const devices = await ESPProvisionManager.searchESPDevices(
+  prefix,
+  transport,
+  security
+);
+
 // ... and select device (using picklist, dropdown, w/e)
 const device: ESPDevice = devices[0];
 
