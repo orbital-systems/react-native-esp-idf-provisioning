@@ -110,6 +110,8 @@ See AndroidManifest.xml in the example project.
 
 - Since iOS 14, apps that communicate over local network are required to have the local network permission. Add key `NSLocalNetworkUsageDescription` in Info.plist with proper description. This permission is required to send/receive provisioning data with the SoftAP devices.
 
+- To use BLE, you must add an entry for NSBluetoothAlwaysUsageDescription to your app.json.
+
 ## Contributing
 
 See the [contributing guide](CONTRIBUTING.md) to learn how to contribute to the repository and the development workflow.
