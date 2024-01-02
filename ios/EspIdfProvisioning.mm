@@ -30,7 +30,7 @@
 
     RCT_EXTERN_METHOD(isSessionEstablished:(NSString *)deviceName)
 
-    RCT_EXTERN_METHOD(getProofOfPossesion:(NSString *)deviceName
+    RCT_EXTERN_METHOD(getProofOfPossession:(NSString *)deviceName
                       resolve:(RCTPromiseResolveBlock)resolve
                       reject:(RCTPromiseRejectBlock)reject)
 
