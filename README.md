@@ -29,7 +29,15 @@ import {
 
 // Method 1.
 // Get devices...
-const devices = ESPProvisionManager.searchESPDevices('prefix');
+let prefix = 'PROV_';
+let transport = ESPTransport.ble;
+let security = ESPSecurity.secure2;
+const devices = await ESPProvisionManager.searchESPDevices(
+  prefix,
+  transport,
+  security
+);
+
 // ... and select device (using picklist, dropdown, w/e)
 const device: ESPDevice = devices[0];
 
@@ -101,6 +109,8 @@ See AndroidManifest.xml in the example project.
 - Since iOS 13, apps that want to access SSID (Wi-Fi network name) are required to have the location permission. Add key `NSLocationWhenInUseUsageDescription` in Info.plist with proper description. This permission is required to verify iOS device is currently connected with the SoftAP.
 
 - Since iOS 14, apps that communicate over local network are required to have the local network permission. Add key `NSLocalNetworkUsageDescription` in Info.plist with proper description. This permission is required to send/receive provisioning data with the SoftAP devices.
+
+- To use BLE, you must add an entry for NSBluetoothAlwaysUsageDescription to your app.json.
 
 ## Contributing
 
