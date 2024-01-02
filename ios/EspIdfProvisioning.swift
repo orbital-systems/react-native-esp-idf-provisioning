@@ -180,8 +180,8 @@ class EspIdfProvisioning: NSObject {
             guard !invoked else { return }
 
             if error != nil {
-                reject("error", error?.description, nil)
-                invoked = true
+                // Ignore error as per https://github.com/orbital-systems/react-native-esp-idf-provisioning/issues/22
+                // and https://github.com/espressif/esp-idf-provisioning-ios/issues/74
                 return
             }
 
