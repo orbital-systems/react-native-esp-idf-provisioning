@@ -16,6 +16,8 @@ export enum ESPWifiAuthMode {
   wpa2Psk = 3,
   wpaPsk = 4,
   wpaWpa2Psk = 5,
+  wpa3Psk = 6,
+  wpa2Wpa3Psk = 7,
 }
 
 export interface ESPDeviceInterface {

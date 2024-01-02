@@ -36,6 +36,8 @@ export function WifiListScreen(
     [ESPWifiAuthMode.wpaPsk]: 'WPA-PSK',
     [ESPWifiAuthMode.wpa2Psk]: 'WPA2-PSK',
     [ESPWifiAuthMode.wpaWpa2Psk]: 'WPA-WPA2-PSK',
+    [ESPWifiAuthMode.wpa3Psk]: 'WPA3-PSK',
+    [ESPWifiAuthMode.wpa2Wpa3Psk]: 'WPA2-WPA3-PSK',
   };
 
   return (
