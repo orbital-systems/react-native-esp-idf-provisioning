@@ -74,6 +74,25 @@ await device.provision(ssid, passphrase);
 device.disconnect();
 ```
 
+## Why use this library instead of alternatives?
+
+There have been several attempts to create a react-native bridge of Espressif's native libraries.
+
+Below are a few examples:
+
+- https://github.com/manbomb/esp-idf-ble-provisioning-rn - Last commit 3 years ago
+- https://github.com/amoghpalnitkar/react-native-esp-idf-provisioning - Last commit 4 years ago
+- https://github.com/kafudev/react-native-esp-idf - Last commit 2 years ago
+- https://github.com/futuristiclabs/react-native-esp32-idf - Last commit 3 years ago
+
+We wanted something that is guaranteed to be compatible with the latest versions of Android and iOS.
+We also needed it to work with the latest (or almost latest) version of react-native.
+
+The examples above were great for inspiration, but they were all abandoned a while ago.
+
+Since this is something we as a company (Orbital Systems) rely on for our current and future
+IoT devices, we decided it was worth it to create and maintain a library with help from the community.
+
 ## Enums
 
 ```ts
