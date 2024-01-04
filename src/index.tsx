@@ -47,7 +47,7 @@ export class ESPDevice implements ESPDeviceInterface {
   }
 
   async connect(
-    proofOfPossesion: string | null = null,
+    proofOfPossession: string | null = null,
     softAPPassword: string | null = null,
     username: string | null = null
   ): Promise<void> {
@@ -55,7 +55,7 @@ export class ESPDevice implements ESPDeviceInterface {
       this.name,
       this.transport,
       this.security,
-      proofOfPossesion,
+      proofOfPossession,
       softAPPassword,
       username
     );
