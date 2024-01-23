@@ -30,6 +30,14 @@ import java.lang.Exception
 import java.util.ArrayList
 import java.util.Base64
 
+fun BluetoothDevice.isAlreadyConnected(): Boolean {
+  return try {
+    javaClass.getMethod("isConnected").invoke(this) as? Boolean? ?: false
+  } catch (e: Throwable) {
+    false
+  }
+}
+
 class EspIdfProvisioningModule internal constructor(context: ReactApplicationContext?) : EspIdfProvisioningSpec(context) {
   override fun getName(): String {
     return NAME
@@ -334,6 +342,13 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
         promise?.reject(Error("Missing one of the following permissions: CHANGE_WIFI_STATE, ACCESS_WIFI_STATE, ACCESS_NETWORK_STATE, ACCESS_FINE_LOCATION"))
         return
       }
+    }
+
+    if (espDevices[deviceName]?.transportType == ESPConstants.TransportType.TRANSPORT_BLE && espDevices[deviceName]?.bluetoothDevice?.isAlreadyConnected() == true) {
+      val result = Arguments.createMap()
+      result.putString("status", "connected")
+      promise?.resolve(result)
+      return
     }
 
     espDevices[deviceName]?.connectToDevice()
