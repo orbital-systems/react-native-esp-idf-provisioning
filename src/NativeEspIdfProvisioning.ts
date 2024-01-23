@@ -58,7 +58,7 @@ export interface Spec extends TurboModule {
     deviceName: string,
     transport: ESPTransport,
     security: ESPSecurity,
-    proofOfPossesion?: string,
+    proofOfPossession?: string,
     softAPPassword?: string,
     username?: string
   ): Promise<ESPDeviceInterface>;

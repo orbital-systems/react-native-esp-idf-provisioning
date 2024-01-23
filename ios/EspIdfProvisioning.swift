@@ -150,19 +150,19 @@ class EspIdfProvisioning: NSObject {
         return self.espDevices[deviceName]!.isSessionEstablished()
     }
 
-    @objc(getProofOfPossesion:resolve:reject:)
-    func getProofOfPossesion(deviceName: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+    @objc(getProofOfPossession:resolve:reject:)
+    func getProofOfPossession(deviceName: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         if self.espDevices[deviceName] == nil {
             reject("error", "No ESP device found. Call createESPDevice first.", nil)
             return
         }
 
         var invoked = false
-        self.espDevices[deviceName]!.delegate?.getProofOfPossesion(forDevice: self.espDevices[deviceName]!, completionHandler: { proofOfPossesion in
+        self.espDevices[deviceName]!.delegate?.getProofOfPossesion(forDevice: self.espDevices[deviceName]!, completionHandler: { proofOfPossession in
             // Prevent multiple callback invokation error
             guard !invoked else { return }
 
-            resolve(proofOfPossesion)
+            resolve(proofOfPossession)
             invoked = true
         })
     }
