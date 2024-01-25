@@ -503,9 +503,8 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       return
     }
 
+    // Not sure what this does
     espDevice.deviceName = newDeviceName
-    espDevices[newDeviceName] = espDevice
-    espDevices.remove(deviceName)
 
     promise?.resolve(newDeviceName)
   }
