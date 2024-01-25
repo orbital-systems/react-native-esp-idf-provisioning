@@ -26,9 +26,16 @@ import com.facebook.react.bridge.WritableMap
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
+import org.json.JSONException
+import org.json.JSONObject
 import java.lang.Exception
 import java.util.ArrayList
 import java.util.Base64
+
+
+inline fun<T> T?.guard(nullClause: () -> Nothing): T {
+  return this ?: nullClause()
+}
 
 fun BluetoothDevice.isAlreadyConnected(): Boolean {
   return try {
@@ -223,18 +230,19 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
     searchESPDevices(deviceName, transport, security, object : Promise {
       override fun resolve(p0: Any?) {
         // If search does not find the device, consider it not found
-        if (espDevices[deviceName] == null) {
+        val espDevice = espDevices[deviceName].guard {
           promise?.reject(Error("Device not found."))
+          return
         }
 
         // Configure proof of possession
-        espDevices[deviceName]?.proofOfPossession = proofOfPossession
+        espDevice.proofOfPossession = proofOfPossession
         if (username != null) {
-          espDevices[deviceName]?.userName = username
+          espDevice.userName = username
         }
 
         val result = Arguments.createMap()
-        result.putString("name", espDevices[deviceName]?.deviceName)
+        result.putString("name", espDevice.deviceName)
         result.putString("transport", transport)
         result.putInt("security", security)
 
@@ -287,12 +295,12 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
   @SuppressLint("MissingPermission")
   @ReactMethod
   override fun connect(deviceName: String, promise: Promise?) {
-    if (espDevices[deviceName] == null) {
+    val espDevice = espDevices[deviceName].guard {
       promise?.reject(Error("No ESP device found. Call createESPDevice first."))
       return
     }
 
-    if (espDevices[deviceName]?.transportType == ESPConstants.TransportType.TRANSPORT_SOFTAP) {
+    if (espDevice.transportType == ESPConstants.TransportType.TRANSPORT_SOFTAP) {
       // Permission checks
       if (!hasWifiPermission() || !hasFineLocationPermission()) {
         promise?.reject(Error("Missing one of the following permissions: CHANGE_WIFI_STATE, ACCESS_WIFI_STATE, ACCESS_NETWORK_STATE, ACCESS_FINE_LOCATION"))
@@ -301,15 +309,15 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
     }
 
     // If device is already connected, exit early
-    if (espDevices[deviceName]?.transportType == ESPConstants.TransportType.TRANSPORT_BLE &&
-        espDevices[deviceName]?.bluetoothDevice?.isAlreadyConnected() == true) {
+    if (espDevice.transportType == ESPConstants.TransportType.TRANSPORT_BLE &&
+        espDevice.bluetoothDevice?.isAlreadyConnected() == true) {
       val result = Arguments.createMap()
       result.putString("status", "connected")
       promise?.resolve(result)
       return
     }
 
-    espDevices[deviceName]?.connectToDevice()
+    espDevice.connectToDevice()
 
     EventBus.getDefault().register(object {
       @Subscribe(threadMode = ThreadMode.MAIN)
@@ -336,13 +344,13 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
 
   @ReactMethod
   override fun sendData(deviceName: String, path: String, data: String, promise: Promise?) {
-    if (espDevices[deviceName] == null) {
+    val espDevice = espDevices[deviceName].guard {
       promise?.reject(Error("No ESP device found. Call createESPDevice first."))
       return
     }
 
     val decodedData = Base64.getDecoder().decode(data)
-    espDevices[deviceName]?.sendDataToCustomEndPoint(path, decodedData, object : ResponseListener {
+    espDevice.sendDataToCustomEndPoint(path, decodedData, object : ResponseListener {
       override fun onSuccess(returnData: ByteArray?) {
         val encodedData = Base64.getEncoder().encode(returnData).toString(Charsets.UTF_8)
         promise?.resolve(encodedData)
@@ -355,23 +363,13 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
   }
 
   @ReactMethod
-  override fun getProofOfPossession(deviceName: String, promise: Promise?) {
-    if (espDevices[deviceName] == null) {
-      promise?.reject(Error("No ESP device found. Call createESPDevice first."))
-      return
-    }
-
-    promise?.resolve(espDevices[deviceName]?.proofOfPossession)
-  }
-
-  @ReactMethod
   override fun scanWifiList(deviceName: String, promise: Promise?) {
-    if (espDevices[deviceName] == null) {
+    val espDevice = espDevices[deviceName].guard {
       promise?.reject(Error("No ESP device found. Call createESPDevice first."))
       return
     }
 
-    espDevices[deviceName]?.scanNetworks(object : WiFiScanListener {
+    espDevice.scanNetworks(object : WiFiScanListener {
       override fun onWifiListReceived(wifiList: ArrayList<WiFiAccessPoint>?) {
         val resultArray = Arguments.createArray()
 
@@ -399,12 +397,12 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
 
   @ReactMethod
   override fun provision(deviceName: String, ssid: String, passphrase: String, promise: Promise?) {
-    if (espDevices[deviceName] == null) {
+    val espDevice = espDevices[deviceName].guard {
       promise?.reject(Error("No ESP device found. Call createESPDevice first."))
       return
     }
 
-    espDevices[deviceName]!!.provision(ssid, passphrase, object : ProvisionListener {
+    espDevice.provision(ssid, passphrase, object : ProvisionListener {
       override fun createSessionFailed(e: Exception?) {
         promise?.reject(e)
       }
@@ -442,21 +440,188 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
   }
 
   @ReactMethod
-  override fun initializeSession(deviceName: String, sessionPath: String, promise: Promise?) {
-    if (espDevices[deviceName] == null) {
+  override fun getProofOfPossession(deviceName: String, promise: Promise?) {
+    val espDevice = espDevices[deviceName].guard {
       promise?.reject(Error("No ESP device found. Call createESPDevice first."))
       return
     }
 
-    espDevices[deviceName]?.initSession(object : ResponseListener {
-      override fun onSuccess(returnData: ByteArray?) {
-        val encodedData = Base64.getEncoder().encode(returnData)
-        promise?.resolve(encodedData)
-      }
+    promise?.resolve(espDevice.proofOfPossession)
+  }
 
-      override fun onFailure(e: Exception?) {
-        promise?.reject(e)
+  @ReactMethod
+  override fun setProofOfPossession(deviceName: String, proofOfPossession: String, promise: Promise?) {
+    val espDevice = espDevices[deviceName].guard {
+      promise?.reject(Error("No ESP device found. Call createESPDevice first."))
+      return
+    }
+
+    espDevice.proofOfPossession = proofOfPossession
+    promise?.resolve(proofOfPossession)
+  }
+
+  @ReactMethod
+  override fun getUsername(deviceName: String, promise: Promise?) {
+    val espDevice = espDevices[deviceName].guard {
+      promise?.reject(Error("No ESP device found. Call createESPDevice first."))
+      return
+    }
+
+    promise?.resolve(espDevice.userName)
+  }
+
+  @ReactMethod
+  override fun setUsername(deviceName: String, username: String, promise: Promise?) {
+    val espDevice = espDevices[deviceName].guard {
+      promise?.reject(Error("No ESP device found. Call createESPDevice first."))
+      return
+    }
+
+    espDevice.userName = username
+    promise?.resolve(username)
+  }
+
+  @ReactMethod
+  override fun getDeviceName(deviceName: String, promise: Promise?) {
+    val espDevice = espDevices[deviceName].guard {
+      promise?.reject(Error("No ESP device found. Call createESPDevice first."))
+      return
+    }
+
+    promise?.resolve(espDevice.deviceName)
+  }
+
+  @ReactMethod
+  override fun setDeviceName(deviceName: String, newDeviceName: String, promise: Promise?) {
+    val espDevice = espDevices[deviceName].guard {
+      promise?.reject(Error("No ESP device found. Call createESPDevice first."))
+      return
+    }
+
+    if (newDeviceName == "") {
+      promise?.reject(Error("Cannot set empty device name."))
+      return
+    }
+
+    espDevice.deviceName = newDeviceName
+    espDevices[newDeviceName] = espDevice
+    espDevices.remove(deviceName)
+
+    promise?.resolve(newDeviceName)
+  }
+
+  override fun getPrimaryServiceUuid(deviceName: String, promise: Promise?) {
+    val espDevice = espDevices[deviceName].guard {
+      promise?.reject(Error("No ESP device found. Call createESPDevice first."))
+      return
+    }
+
+    promise?.resolve(espDevice.primaryServiceUuid)
+  }
+
+  @ReactMethod
+  override fun setPrimaryServiceUuid(deviceName: String, primaryServiceUuid: String, promise: Promise?) {
+    val espDevice = espDevices[deviceName].guard {
+      promise?.reject(Error("No ESP device found. Call createESPDevice first."))
+      return
+    }
+
+    espDevice.primaryServiceUuid = primaryServiceUuid
+    promise?.resolve(primaryServiceUuid)
+  }
+
+  @ReactMethod
+  override fun getSecurityType(deviceName: String, promise: Promise?) {
+    val espDevice = espDevices[deviceName].guard {
+      promise?.reject(Error("No ESP device found. Call createESPDevice first."))
+      return
+    }
+
+    promise?.resolve(espDevice.securityType.ordinal)
+  }
+
+  @ReactMethod
+  override fun setSecurityType(deviceName: String, security: Int, promise: Promise?) {
+    val espDevice = espDevices[deviceName].guard {
+      promise?.reject(Error("No ESP device found. Call createESPDevice first."))
+      return
+    }
+
+    val securityEnum = when (security) {
+      0 -> ESPConstants.SecurityType.SECURITY_0
+      1 -> ESPConstants.SecurityType.SECURITY_1
+      2 -> ESPConstants.SecurityType.SECURITY_2
+      else -> ESPConstants.SecurityType.SECURITY_2
+    }
+
+    espDevice.securityType = securityEnum
+
+    promise?.resolve(securityEnum.ordinal)
+  }
+
+  @ReactMethod
+  override fun getTransportType(deviceName: String, promise: Promise?) {
+    val espDevice = espDevices[deviceName].guard {
+      promise?.reject(Error("No ESP device found. Call createESPDevice first."))
+      return
+    }
+
+    promise?.resolve(espDevice.transportType.toString())
+  }
+
+  @ReactMethod
+  override fun getVersionInfo(deviceName: String, promise: Promise?) {
+    val espDevice = espDevices[deviceName].guard {
+      promise?.reject(Error("No ESP device found. Call createESPDevice first."))
+      return
+    }
+
+    val result = Arguments.createMap()
+
+    if (espDevice.versionInfo !== null) {
+      try {
+        val protoVersion = JSONObject(espDevice.versionInfo).getJSONObject("prov")
+
+        val prov = Arguments.createMap()
+        if (protoVersion.has("sec_ver")) {
+          prov.putInt("sec_ver", protoVersion.optInt("sec_ver"))
+        }
+        if (protoVersion.has("ver")) {
+          prov.putString("ver", protoVersion.optString("ver"))
+        }
+        if (protoVersion.has("cap")) {
+          val capabilities = Arguments.createArray()
+          val cap = protoVersion.getJSONArray("cap")
+          for (i in 0..<cap.length()) {
+            capabilities.pushString(cap.getString(i))
+          }
+          prov.putArray("cap", capabilities)
+        }
+
+        result.putMap("prov", prov)
+      } catch (e: JSONException) {
+        // Ignore error
       }
-    })
+    }
+
+    promise?.resolve(result)
+  }
+
+  @ReactMethod
+  override fun getDeviceCapabilities(deviceName: String, promise: Promise?) {
+    val espDevice = espDevices[deviceName].guard {
+      promise?.reject(Error("No ESP device found. Call createESPDevice first."))
+      return
+    }
+
+    val capabilities = Arguments.createArray()
+
+    if (espDevice.deviceCapabilities != null) {
+      for (capability in espDevice.deviceCapabilities!!) {
+        capabilities.pushString(capability)
+      }
+    }
+
+    promise?.resolve(capabilities)
   }
 }
