@@ -35,10 +35,7 @@ export class ESPDevice implements ESPDeviceInterface {
   name: string;
   transport: ESPTransport;
   security: ESPSecurity;
-  connected?: boolean;
-  capabilities?: string[];
-  versionInfo?: { [key: string]: any }[];
-  advertisementData?: { [key: string]: any }[];
+  connected: boolean = false;
 
   constructor({ name, transport, security }: ESPDeviceInterface) {
     this.name = name;
@@ -51,7 +48,7 @@ export class ESPDevice implements ESPDeviceInterface {
     softAPPassword: string | null = null,
     username: string | null = null
   ): Promise<void> {
-    const data = await EspIdfProvisioning.createESPDevice(
+    await EspIdfProvisioning.createESPDevice(
       this.name,
       this.transport,
       this.security,
@@ -61,31 +58,19 @@ export class ESPDevice implements ESPDeviceInterface {
     );
 
     const response = await EspIdfProvisioning.connect(this.name);
-
     this.connected = true;
-    this.capabilities = data.capabilities;
-    this.versionInfo = data.versionInfo;
-    this.advertisementData = data.advertisementData;
 
     return response;
   }
 
-  sendData(path: string, data: string): Promise<string> {
+  async sendData(path: string, data: string): Promise<string> {
     const base64Data = Buffer.from(data).toString('base64');
     return EspIdfProvisioning.sendData(this.name, path, base64Data).then(
       (returnData: string) => Buffer.from(returnData, 'base64').toString('utf8')
     );
   }
 
-  isSessionEstablished(): boolean {
-    return EspIdfProvisioning.isSessionEstablished(this.name);
-  }
-
-  getProofOfPossession(): Promise<string | undefined> {
-    return EspIdfProvisioning.getProofOfPossession(this.name);
-  }
-
-  scanWifiList(): Promise<ESPWifiList[]> {
+  async scanWifiList(): Promise<ESPWifiList[]> {
     return EspIdfProvisioning.scanWifiList(this.name);
   }
 
@@ -94,12 +79,71 @@ export class ESPDevice implements ESPDeviceInterface {
     return EspIdfProvisioning.disconnect(this.name);
   }
 
-  provision(ssid: string, passphrase: string): Promise<ESPStatusResponse> {
+  async provision(
+    ssid: string,
+    passphrase: string
+  ): Promise<ESPStatusResponse> {
     return EspIdfProvisioning.provision(this.name, ssid, passphrase);
   }
 
-  initialiseSession(sessionPath?: string): Promise<ESPStatusResponse> {
-    return EspIdfProvisioning.initialiseSession(this.name, sessionPath);
+  async getProofOfPossession(): Promise<string | undefined> {
+    return EspIdfProvisioning.getProofOfPossession(this.name);
+  }
+
+  async setProofOfPossession(proofOfPossession: string): Promise<this> {
+    await EspIdfProvisioning.setProofOfPossession(this.name, proofOfPossession);
+    return this;
+  }
+
+  async getUsername(): Promise<string | undefined> {
+    return EspIdfProvisioning.getUsername(this.name);
+  }
+
+  async setUsername(username: string): Promise<this> {
+    await EspIdfProvisioning.setUsername(this.name, username);
+    return this;
+  }
+
+  async getDeviceName(): Promise<string | undefined> {
+    return EspIdfProvisioning.getDeviceName(this.name);
+  }
+
+  async setDeviceName(deviceName: string): Promise<this> {
+    await EspIdfProvisioning.setDeviceName(this.name, deviceName);
+    return this;
+  }
+
+  async getPrimaryServiceUuid(): Promise<string | undefined> {
+    return EspIdfProvisioning.getPrimaryServiceUuid(this.name);
+  }
+
+  async setPrimaryServiceUuid(primaryServiceUuid: string): Promise<this> {
+    await EspIdfProvisioning.setPrimaryServiceUuid(
+      this.name,
+      primaryServiceUuid
+    );
+    return this;
+  }
+
+  async getSecurityType(): Promise<ESPSecurity | undefined> {
+    return EspIdfProvisioning.getSecurityType(this.name);
+  }
+
+  async setSecurityType(securityType: ESPSecurity): Promise<this> {
+    await EspIdfProvisioning.setSecurityType(this.name, securityType);
+    return this;
+  }
+
+  async getTransportType(): Promise<ESPTransport | undefined> {
+    return EspIdfProvisioning.getTransportType(this.name);
+  }
+
+  async getVersionInfo(): Promise<{ [key: string]: any }[] | undefined> {
+    return EspIdfProvisioning.getVersionInfo(this.name);
+  }
+
+  async getDeviceCapabilities(): Promise<string[] | undefined> {
+    return EspIdfProvisioning.getDeviceCapabilities(this.name);
   }
 }
 

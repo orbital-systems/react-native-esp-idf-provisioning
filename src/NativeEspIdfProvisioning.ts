@@ -53,7 +53,6 @@ export interface Spec extends TurboModule {
     security: ESPSecurity
   ): Promise<ESPDeviceInterface[]>;
   stopESPDevicesSearch(): void;
-
   createESPDevice(
     deviceName: string,
     transport: ESPTransport,
@@ -64,8 +63,6 @@ export interface Spec extends TurboModule {
   ): Promise<ESPDeviceInterface>;
   connect(deviceName: string): Promise<ESPStatusResponse>;
   sendData(deviceName: string, path: string, data: string): Promise<string>;
-  isSessionEstablished(deviceName: string): boolean;
-  getProofOfPossession(deviceName: string): Promise<string | undefined>;
   scanWifiList(deviceName: string): Promise<ESPWifiList>;
   disconnect(deviceName: string): void;
   provision(
@@ -73,10 +70,36 @@ export interface Spec extends TurboModule {
     ssid: string,
     passphrase: string
   ): Promise<ESPStatusResponse>;
-  initialiseSession(
+  getProofOfPossession(deviceName: string): Promise<string | undefined>;
+  setProofOfPossession(
     deviceName: string,
-    sessionPath: string
-  ): Promise<ESPStatusResponse>;
+    proofOfPossession: string
+  ): Promise<string | undefined>;
+  getUsername(deviceName: string): Promise<string | undefined>;
+  setUsername(
+    deviceName: string,
+    username: string
+  ): Promise<string | undefined>;
+  getDeviceName(deviceName: string): Promise<string | undefined>;
+  setDeviceName(
+    deviceName: string,
+    newDeviceName: string
+  ): Promise<string | undefined>;
+  getPrimaryServiceUuid(deviceName: string): Promise<string | undefined>;
+  setPrimaryServiceUuid(
+    deviceName: string,
+    primaryServiceUuid: string
+  ): Promise<string | undefined>;
+  getSecurityType(deviceName: string): Promise<ESPSecurity | undefined>;
+  setSecurityType(
+    deviceName: string,
+    securityType: ESPSecurity
+  ): Promise<ESPSecurity | undefined>;
+  getTransportType(deviceName: string): Promise<ESPTransport | undefined>;
+  getVersionInfo(
+    deviceName: string
+  ): Promise<{ [key: string]: any }[] | undefined>;
+  getDeviceCapabilities(deviceName: string): Promise<string[] | undefined>;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('EspIdfProvisioning');
