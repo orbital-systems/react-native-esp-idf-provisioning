@@ -192,8 +192,20 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
     var espDevice = espDevices[deviceName];
     if (espDevice == null) {
       espDevice = espProvisionManager.createESPDevice(transportEnum, securityEnum)
-      espDevice.deviceName = deviceName
       espDevices[deviceName] = espDevice
+    } else {
+      // This looks weird on first glance, but it catches the edge case when
+      // a user unpairs the device from Android bluetooth menu and then tries to reconnect
+      // to it.
+      //
+      // I found out it connects just fine but fails to write characteristics and is
+      // disconnected immediately after trying to write characteristic (by the device).
+      //
+      // Pre-emptively disconnecting the device upon creation if it's in bond state NONE seems
+      // to fix this issue. Don't ask me why ;)
+      if (espDevice.bluetoothDevice?.bondState == BluetoothDevice.BOND_NONE) {
+        espDevice.disconnectDevice()
+      }
     }
 
     // If the bluetooth device does not exist, try using the bonded one (if it exists)
