@@ -37,7 +37,15 @@ export class ESPDevice implements ESPDeviceInterface {
   security: ESPSecurity;
   connected: boolean = false;
 
-  constructor({ name, transport, security }: ESPDeviceInterface) {
+  constructor({
+    name,
+    transport = ESPTransport.ble,
+    security = ESPSecurity.secure2,
+  }: {
+    name: string;
+    transport: ESPTransport;
+    security: ESPSecurity;
+  }) {
     this.name = name;
     this.transport = transport;
     this.security = security;
