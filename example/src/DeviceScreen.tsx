@@ -13,6 +13,24 @@ export function DeviceScreen(
 ) {
   const insets = useSafeAreaInsets();
   const [device, setDevice] = React.useState<ESPDevice | undefined>();
+  const [versionInfo, setVersionInfo] = React.useState<Record<string, any>>();
+  const [deviceCapabilities, setDeviceCapabilities] =
+    React.useState<string[]>();
+
+  React.useEffect(() => {
+    async function getVersionInfo() {
+      setVersionInfo(await device?.getVersionInfo());
+    }
+
+    async function getDeviceCapabilities() {
+      setDeviceCapabilities(await device?.getDeviceCapabilities());
+    }
+
+    if (device?.connected) {
+      getVersionInfo();
+      getDeviceCapabilities();
+    }
+  }, [device]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -69,17 +87,13 @@ export function DeviceScreen(
           <Text style={styles.text} h4>
             Capabilities
           </Text>
-          <Text style={styles.text}>{device?.capabilities?.toString()}</Text>
-          <Text style={styles.text} h4>
-            Advertisement data
-          </Text>
           <Text style={styles.text}>
-            {JSON.stringify(device?.advertisementData)}
+            {JSON.stringify(deviceCapabilities ?? [])}
           </Text>
           <Text style={styles.text} h4>
             Version info
           </Text>
-          <Text style={styles.text}>{device?.versionInfo?.toString()}</Text>
+          <Text style={styles.text}>{JSON.stringify(versionInfo ?? {})}</Text>
           <View style={{ marginBottom: 8 }}>
             <Button
               title="Scan Wi-Fi list"
