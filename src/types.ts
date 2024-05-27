@@ -24,7 +24,6 @@ export interface ESPDeviceInterface {
   name: string;
   security: ESPSecurity;
   transport: ESPTransport;
-  connected: boolean;
 
   connect(
     proofOfPossession: string | null,

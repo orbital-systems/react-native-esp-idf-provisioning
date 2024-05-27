@@ -35,7 +35,6 @@ export class ESPDevice implements ESPDeviceInterface {
   name: string;
   transport: ESPTransport;
   security: ESPSecurity;
-  connected: boolean = false;
 
   constructor({
     name,
@@ -66,7 +65,6 @@ export class ESPDevice implements ESPDeviceInterface {
     );
 
     const response = await EspIdfProvisioning.connect(this.name);
-    this.connected = true;
 
     return response;
   }
@@ -83,7 +81,6 @@ export class ESPDevice implements ESPDeviceInterface {
   }
 
   disconnect(): void {
-    this.connected = false;
     return EspIdfProvisioning.disconnect(this.name);
   }
 

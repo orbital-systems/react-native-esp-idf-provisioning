@@ -26,7 +26,7 @@ export function DeviceScreen(
       setDeviceCapabilities(await device?.getDeviceCapabilities());
     }
 
-    if (device?.connected) {
+    if (device) {
       getVersionInfo();
       getDeviceCapabilities();
     }
