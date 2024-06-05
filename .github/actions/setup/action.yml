@@ -6,6 +6,7 @@ runs:
   steps:
     - name: Enable Corepack
       run: corepack enable
+      shell: bash
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
