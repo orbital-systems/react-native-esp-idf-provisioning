@@ -68,12 +68,12 @@ export interface Spec extends TurboModule {
     deviceName: string,
     primaryServiceUuid: string
   ): Promise<string | undefined>;
-  getSecurityType(deviceName: string): Promise<ESPSecurity | undefined>;
+  getSecurityType(deviceName: string): Promise<number | undefined>;
   setSecurityType(
     deviceName: string,
-    securityType: ESPSecurity
-  ): Promise<ESPSecurity | undefined>;
-  getTransportType(deviceName: string): Promise<ESPTransport | undefined>;
+    securityType: number
+  ): Promise<number | undefined>;
+  getTransportType(deviceName: string): Promise<string | undefined>;
   getVersionInfo(
     deviceName: string
   ): Promise<{ [key: string]: any }[] | undefined>;
