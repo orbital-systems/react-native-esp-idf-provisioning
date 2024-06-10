@@ -28,12 +28,6 @@
                       resolve:(RCTPromiseResolveBlock)resolve
                       reject:(RCTPromiseRejectBlock)reject)
 
-    RCT_EXTERN_METHOD(isSessionEstablished:(NSString *)deviceName)
-
-    RCT_EXTERN_METHOD(getProofOfPossession:(NSString *)deviceName
-                      resolve:(RCTPromiseResolveBlock)resolve
-                      reject:(RCTPromiseRejectBlock)reject)
-
     RCT_EXTERN_METHOD(scanWifiList:(NSString *)deviceName
                       resolve:(RCTPromiseResolveBlock)resolve
                       reject:(RCTPromiseRejectBlock)reject)
@@ -46,8 +40,60 @@
                       resolve:(RCTPromiseResolveBlock)resolve
                       reject:(RCTPromiseRejectBlock)reject)
 
-    RCT_EXTERN_METHOD(initialiseSession:(NSString *)deviceName
-                      sessionPath(NSString *)sessionPath
+    RCT_EXTERN_METHOD(getProofOfPossession:(NSString *)deviceName
+                      resolve:(RCTPromiseResolveBlock)resolve
+                      reject:(RCTPromiseRejectBlock)reject)
+
+    RCT_EXTERN_METHOD(setProofOfPossession:(NSString *)deviceName
+                      proofOfPossession:(NSString *)proofOfPossession
+                      resolve:(RCTPromiseResolveBlock)resolve
+                      reject:(RCTPromiseRejectBlock)reject)
+
+    RCT_EXTERN_METHOD(getUsername:(NSString *)deviceName
+                      resolve:(RCTPromiseResolveBlock)resolve
+                      reject:(RCTPromiseRejectBlock)reject)
+
+    RCT_EXTERN_METHOD(setUsername:(NSString *)deviceName
+                      username:(NSString *)username
+                      resolve:(RCTPromiseResolveBlock)resolve
+                      reject:(RCTPromiseRejectBlock)reject)
+
+    RCT_EXTERN_METHOD(getDeviceName:(NSString *)deviceName
+                      resolve:(RCTPromiseResolveBlock)resolve
+                      reject:(RCTPromiseRejectBlock)reject)
+
+    RCT_EXTERN_METHOD(setDeviceName:(NSString *)deviceName
+                      newDeviceName:(NSString *)newDeviceName
+                      resolve:(RCTPromiseResolveBlock)resolve
+                      reject:(RCTPromiseRejectBlock)reject)
+
+    RCT_EXTERN_METHOD(getPrimaryServiceUuid:(NSString *)deviceName
+                      resolve:(RCTPromiseResolveBlock)resolve
+                      reject:(RCTPromiseRejectBlock)reject)
+
+    RCT_EXTERN_METHOD(setPrimaryServiceUuid:(NSString *)deviceName
+                      primaryServiceUuid:(NSString *)primaryServiceUuid
+                      resolve:(RCTPromiseResolveBlock)resolve
+                      reject:(RCTPromiseRejectBlock)reject)
+
+    RCT_EXTERN_METHOD(getSecurityType:(NSString *)deviceName
+                      resolve:(RCTPromiseResolveBlock)resolve
+                      reject:(RCTPromiseRejectBlock)reject)
+
+    RCT_EXTERN_METHOD(setSecurityType:(NSString *)deviceName
+                      security:(NSInteger)security
+                      resolve:(RCTPromiseResolveBlock)resolve
+                      reject:(RCTPromiseRejectBlock)reject)
+
+    RCT_EXTERN_METHOD(getTransportType:(NSString *)deviceName
+                      resolve:(RCTPromiseResolveBlock)resolve
+                      reject:(RCTPromiseRejectBlock)reject)
+
+    RCT_EXTERN_METHOD(getVersionInfo:(NSString *)deviceName
+                      resolve:(RCTPromiseResolveBlock)resolve
+                      reject:(RCTPromiseRejectBlock)reject)
+
+    RCT_EXTERN_METHOD(getDeviceCapabilities:(NSString *)deviceName
                       resolve:(RCTPromiseResolveBlock)resolve
                       reject:(RCTPromiseRejectBlock)reject)
 
