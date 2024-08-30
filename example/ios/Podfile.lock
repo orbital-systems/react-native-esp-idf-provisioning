@@ -1,9 +1,9 @@
 PODS:
   - boost (1.83.0)
   - DoubleConversion (1.1.6)
-  - ESPProvision (2.1.2):
-    - ESPProvision/Core (= 2.1.2)
-  - ESPProvision/Core (2.1.2):
+  - ESPProvision (3.0.1):
+    - ESPProvision/Core (= 3.0.1)
+  - ESPProvision/Core (3.0.1):
     - SwiftProtobuf (~> 1.22.0)
   - FBLazyVector (0.74.1)
   - fmt (9.1.0)
@@ -941,7 +941,7 @@ PODS:
     - React-debug
   - react-native-esp-idf-provisioning (0.3.0):
     - DoubleConversion
-    - ESPProvision (~> 2.1)
+    - ESPProvision (~> 3.0)
     - glog
     - hermes-engine
     - RCT-Folly (= 2024.01.01.00)
@@ -1434,7 +1434,7 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   boost: d3f49c53809116a5d38da093a8aa78bf551aed09
   DoubleConversion: 76ab83afb40bddeeee456813d9c04f67f78771b5
-  ESPProvision: f05031824999e3493e5e90b7c74d0aebcd7777d0
+  ESPProvision: 47194e8d7360bf7844a2b7f6a3aa54b8805aca5a
   FBLazyVector: 898d14d17bf19e2435cafd9ea2a1033efe445709
   fmt: 4c2741a687cc09f0634a2e2c72a838b99f1ff120
   glog: c5d68082e772fa1c511173d6b30a9de2c05a69a2
@@ -1463,7 +1463,7 @@ SPEC CHECKSUMS:
   React-jsitracing: 233d1a798fe0ff33b8e630b8f00f62c4a8115fbc
   React-logger: 7e7403a2b14c97f847d90763af76b84b152b6fce
   React-Mapbuffer: 11029dcd47c5c9e057a4092ab9c2a8d10a496a33
-  react-native-esp-idf-provisioning: 64223bda3eee39dfc07bf7771fb6faf2d7ab54a4
+  react-native-esp-idf-provisioning: 328b8fbd46b61d70385b7a2eccd4c0c06920c0c2
   react-native-safe-area-context: 399a5859f6acbdf67f671c69b53113f535f3b5b0
   React-nativeconfig: b0073a590774e8b35192fead188a36d1dca23dec
   React-NativeModulesApple: df46ff3e3de5b842b30b4ca8a6caae6d7c8ab09f
@@ -1497,4 +1497,4 @@ SPEC CHECKSUMS:
 
 PODFILE CHECKSUM: efcae17fd2c8ee8d28a8aa3f583f87b34ba2ba28
 
-COCOAPODS: 1.14.3
+COCOAPODS: 1.15.2
