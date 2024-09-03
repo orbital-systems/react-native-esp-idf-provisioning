@@ -80,7 +80,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
 
   @SuppressLint("MissingPermission")
   @ReactMethod
-  override fun searchESPDevices(devicePrefix: String, transport: String, security: Int, promise: Promise?) {
+  override fun searchESPDevices(devicePrefix: String, transport: String, security: Double, promise: Promise?) {
     // Permission checks
     if (!hasBluetoothPermissions() || !hasFineLocationPermission()) {
       promise?.reject(Error("Missing one of the following permissions: BLUETOOTH, BLUETOOTH_ADMIN, BLUETOOTH_CONNECT, BLUETOOTH_SCAN, ACCESS_FINE_LOCATION"))
@@ -92,7 +92,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       "ble" -> ESPConstants.TransportType.TRANSPORT_BLE
       else -> ESPConstants.TransportType.TRANSPORT_BLE
     }
-    val securityEnum = when (security) {
+    val securityEnum = when (security.toInt()) {
       0 -> ESPConstants.SecurityType.SECURITY_0
       1 -> ESPConstants.SecurityType.SECURITY_1
       2 -> ESPConstants.SecurityType.SECURITY_2
@@ -140,7 +140,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
           val resultMap = Arguments.createMap()
           resultMap.putString("name", espDevice.deviceName)
           resultMap.putString("transport", transport)
-          resultMap.putInt("security", security)
+          resultMap.putInt("security", security.toInt())
 
           resultArray.pushMap(resultMap)
         }
@@ -171,7 +171,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
   override fun createESPDevice(
     deviceName: String,
     transport: String,
-    security: Int,
+    security: Double,
     proofOfPossession: String?,
     softAPPassword: String?,
     username: String?,
@@ -188,7 +188,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       "ble" -> ESPConstants.TransportType.TRANSPORT_BLE
       else -> ESPConstants.TransportType.TRANSPORT_BLE
     }
-    val securityEnum = when (security) {
+    val securityEnum = when (security.toInt()) {
       0 -> ESPConstants.SecurityType.SECURITY_0
       1 -> ESPConstants.SecurityType.SECURITY_1
       2 -> ESPConstants.SecurityType.SECURITY_2
@@ -232,7 +232,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       val result = Arguments.createMap()
       result.putString("name", espDevice.deviceName)
       result.putString("transport", transport)
-      result.putInt("security", security)
+      result.putInt("security", security.toInt())
 
       promise?.resolve(result)
       return
@@ -256,7 +256,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
         val result = Arguments.createMap()
         result.putString("name", espDevice.deviceName)
         result.putString("transport", transport)
-        result.putInt("security", security)
+        result.putInt("security", security.toInt())
 
         promise?.resolve(result)
       }
@@ -552,13 +552,13 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
   }
 
   @ReactMethod
-  override fun setSecurityType(deviceName: String, security: Int, promise: Promise?) {
+  override fun setSecurityType(deviceName: String, security: Double, promise: Promise?) {
     val espDevice = espDevices[deviceName].guard {
       promise?.reject(Error("No ESP device found. Call createESPDevice first."))
       return
     }
 
-    val securityEnum = when (security) {
+    val securityEnum = when (security.toInt()) {
       0 -> ESPConstants.SecurityType.SECURITY_0
       1 -> ESPConstants.SecurityType.SECURITY_1
       2 -> ESPConstants.SecurityType.SECURITY_2

@@ -1,4 +1,8 @@
+#ifdef RCT_NEW_ARCH_ENABLED
+#import <RNEspIdfProvisioningSpec/RNEspIdfProvisioningSpec.h>
+#else
 #import <React/RCTBridgeModule.h>
+#endif
 
 @interface RCT_EXTERN_MODULE(EspIdfProvisioning, NSObject)
     RCT_EXTERN_METHOD(searchESPDevices:(NSString *)devicePrefix
