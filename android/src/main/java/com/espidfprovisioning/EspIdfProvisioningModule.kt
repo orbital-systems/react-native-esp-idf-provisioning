@@ -150,7 +150,9 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
         }
 
         override fun onFailure(e: Exception?) {
-          promise?.reject(e)
+          if (e != null) {
+            promise?.reject(e)
+          }
         }
       })
     } else {
@@ -186,7 +188,9 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
         }
 
         override fun onWiFiScanFailed(e: Exception?) {
-          promise?.reject(e)
+          if (e != null) {
+            promise?.reject(e)
+          }
         }
       })
     }
@@ -317,45 +321,44 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
         promise?.resolve(result)
       }
 
-      override fun reject(p0: String?, p1: String?) {
-        promise?.reject(p0, p1)
+      override fun reject(message: String) {
+        promise?.reject(message)
       }
 
-      override fun reject(p0: String?, p1: Throwable?) {
-        promise?.reject(p0, p1)
+      override fun reject(code: String, userInfo: WritableMap) {
+        promise?.reject(code, userInfo)
       }
 
-      override fun reject(p0: String?, p1: String?, p2: Throwable?) {
-        promise?.reject(p0, p1, p2)
+      override fun reject(code: String, message: String?) {
+        promise?.reject(code, message)
       }
 
-      override fun reject(p0: Throwable?) {
-        promise?.reject(p0)
+      override fun reject(code: String, message: String?, userInfo: WritableMap) {
+        promise?.reject(code, message, userInfo)
       }
 
-      override fun reject(p0: Throwable?, p1: WritableMap?) {
-        promise?.reject(p0, p1)
+      override fun reject(code: String, message: String?, throwable: Throwable?) {
+        promise?.reject(code, message, throwable)
       }
 
-      override fun reject(p0: String?, p1: WritableMap) {
-        promise?.reject(p0, p1)
+      override fun reject(code: String, throwable: Throwable?) {
+        promise?.reject(code, throwable)
       }
 
-      override fun reject(p0: String?, p1: Throwable?, p2: WritableMap?) {
-        promise?.reject(p0, p1, p2)
+      override fun reject(code: String, throwable: Throwable?, userInfo: WritableMap) {
+        promise?.reject(code, throwable, userInfo)
       }
 
-      override fun reject(p0: String?, p1: String?, p2: WritableMap) {
-        promise?.reject(p0, p1, p2)
+      override fun reject(code: String?, message: String?, throwable: Throwable?, userInfo: WritableMap?) {
+        promise?.reject(code, message, throwable, userInfo)
       }
 
-      override fun reject(p0: String?, p1: String?, p2: Throwable?, p3: WritableMap?) {
-        promise?.reject(p0, p1, p2, p3)
+      override fun reject(throwable: Throwable) {
+        promise?.reject(throwable)
       }
 
-      @Deprecated("Deprecated in Java", ReplaceWith("promise?.reject(p0)"))
-      override fun reject(p0: String?) {
-        promise?.reject(p0)
+      override fun reject(throwable: Throwable, userInfo: WritableMap) {
+        promise?.reject(throwable, userInfo)
       }
     })
   }
@@ -425,7 +428,9 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       }
 
       override fun onFailure(e: Exception?) {
-        promise?.reject(e)
+        if (e != null) {
+          promise?.reject(e)
+        }
       }
     })
   }
@@ -453,7 +458,9 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       }
 
       override fun onWiFiScanFailed(e: Exception?) {
-        promise?.reject(e)
+        if (e != null) {
+          promise?.reject(e)
+        }
       }
     })
   }
@@ -472,7 +479,9 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
 
     espDevice.provision(ssid, passphrase, object : ProvisionListener {
       override fun createSessionFailed(e: Exception?) {
-        promise?.reject(e)
+        if (e != null) {
+          promise?.reject(e)
+        }
       }
 
       override fun wifiConfigSent() {
@@ -480,7 +489,9 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       }
 
       override fun wifiConfigFailed(e: Exception?) {
-        promise?.reject(e)
+        if (e != null) {
+          promise?.reject(e)
+        }
       }
 
       override fun wifiConfigApplied() {
@@ -488,7 +499,9 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       }
 
       override fun wifiConfigApplyFailed(e: Exception?) {
-        promise?.reject(e)
+        if (e != null) {
+          promise?.reject(e)
+        }
       }
 
       override fun provisioningFailedFromDevice(failureReason: ESPConstants.ProvisionFailureReason?) {
@@ -502,7 +515,9 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       }
 
       override fun onProvisioningFailed(e: Exception?) {
-        promise?.reject(e)
+        if (e != null) {
+          promise?.reject(e)
+        }
       }
     })
   }
