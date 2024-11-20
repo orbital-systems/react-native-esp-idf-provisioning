@@ -13,6 +13,9 @@ import {
 } from '@orbital-systems/react-native-esp-idf-provisioning';
 import type { StackParamList } from './types';
 import { styles } from './theme';
+import { ListItemContent } from '@rneui/base/dist/ListItem/ListItem.Content';
+import { ListItemTitle } from '@rneui/base/dist/ListItem/ListItem.Title';
+import { ListItemSubtitle } from '@rneui/base/dist/ListItem/ListItem.Subtitle';
 
 export function HomeScreen(
   props: NativeStackScreenProps<StackParamList, 'Home'>
@@ -49,6 +52,10 @@ export function HomeScreen(
   );
 
   React.useLayoutEffect(() => {
+    if (!props.navigation) {
+      return;
+    }
+
     props.navigation.setOptions({
       title: 'Home',
       headerRight: () => (
@@ -126,12 +133,12 @@ export function HomeScreen(
                   }
                 >
                   <Icon name="chip" type="material-community" />
-                  <ListItem.Content>
-                    <ListItem.Title>{device.name}</ListItem.Title>
-                    <ListItem.Subtitle>
+                  <ListItemContent>
+                    <ListItemTitle>{device.name}</ListItemTitle>
+                    <ListItemSubtitle>
                       {espSecurityToString[device.security]}
-                    </ListItem.Subtitle>
-                  </ListItem.Content>
+                    </ListItemSubtitle>
+                  </ListItemContent>
                   <ListItem.Chevron />
                 </ListItem>
               ))
@@ -139,7 +146,7 @@ export function HomeScreen(
               <ListItem style={{ opacity: 0.5 }}>
                 <Icon name="alert-circle" type="material-community" />
                 <ListItem.Content>
-                  <ListItem.Title>No devices found</ListItem.Title>
+                  <ListItemTitle>No devices found</ListItemTitle>
                 </ListItem.Content>
               </ListItem>
             ))}

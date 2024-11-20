@@ -8,6 +8,9 @@ import {
 } from '@orbital-systems/react-native-esp-idf-provisioning';
 import type { StackParamList } from './types';
 import { styles } from './theme';
+import { ListItemContent } from '@rneui/base/dist/ListItem/ListItem.Content';
+import { ListItemTitle } from '@rneui/base/dist/ListItem/ListItem.Title';
+import { ListItemSubtitle } from '@rneui/base/dist/ListItem/ListItem.Subtitle';
 
 export function WifiListScreen(
   props: NativeStackScreenProps<StackParamList, 'WifiList'>
@@ -81,12 +84,12 @@ export function WifiListScreen(
                     }
                   >
                     <Icon name={icon} type="material-community" />
-                    <ListItem.Content>
-                      <ListItem.Title>{item.ssid}</ListItem.Title>
-                      <ListItem.Subtitle>
+                    <ListItemContent>
+                      <ListItemTitle>{item.ssid}</ListItemTitle>
+                      <ListItemSubtitle>
                         {espWifiAuthToString[item.auth]}
-                      </ListItem.Subtitle>
-                    </ListItem.Content>
+                      </ListItemSubtitle>
+                    </ListItemContent>
                     <ListItem.Chevron />
                   </ListItem>
                 );
@@ -94,9 +97,9 @@ export function WifiListScreen(
           ) : (
             <ListItem style={{ opacity: 0.5 }}>
               <Icon name="alert-circle" type="material-community" />
-              <ListItem.Content>
-                <ListItem.Title>No devices found</ListItem.Title>
-              </ListItem.Content>
+              <ListItemContent>
+                <ListItemTitle>No devices found</ListItemTitle>
+              </ListItemContent>
             </ListItem>
           ))}
       </ScrollView>
