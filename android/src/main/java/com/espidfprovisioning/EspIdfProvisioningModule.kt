@@ -81,12 +81,6 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
   @SuppressLint("MissingPermission")
   @ReactMethod
   override fun searchESPDevices(devicePrefix: String, transport: String, security: Double, promise: Promise?) {
-    // Permission checks
-    if (!hasBluetoothPermissions() || !hasFineLocationPermission()) {
-      promise?.reject(Error("Missing one of the following permissions: BLUETOOTH, BLUETOOTH_ADMIN, BLUETOOTH_CONNECT, BLUETOOTH_SCAN, ACCESS_FINE_LOCATION"))
-      return
-    }
-
     val transportEnum = when (transport) {
       "softap" -> ESPConstants.TransportType.TRANSPORT_SOFTAP
       "ble" -> ESPConstants.TransportType.TRANSPORT_BLE
@@ -100,58 +94,106 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
     }
 
     espDevices.clear()
-    espProvisionManager.searchBleEspDevices(devicePrefix, object : BleScanListener {
-      override fun scanStartFailed() {
-        promise?.reject(Error("Scan could not be started."))
+    if (transportEnum == ESPConstants.TransportType.TRANSPORT_BLE) {
+      // Permission checks
+      if (!hasBluetoothPermissions() || !hasFineLocationPermission()) {
+        promise?.reject(Error("Missing one of the following permissions: BLUETOOTH, BLUETOOTH_ADMIN, BLUETOOTH_CONNECT, BLUETOOTH_SCAN, ACCESS_FINE_LOCATION"))
+        return
       }
 
-      override fun onPeripheralFound(device: BluetoothDevice?, scanResult: ScanResult?) {
-        // Can this happen?
-        if (device == null) {
-          return
+      espProvisionManager.searchBleEspDevices(devicePrefix, object : BleScanListener {
+        override fun scanStartFailed() {
+          promise?.reject(Error("Scan could not be started."))
         }
 
-        val deviceName = scanResult?.scanRecord?.deviceName
+        override fun onPeripheralFound(device: BluetoothDevice?, scanResult: ScanResult?) {
+          // Can this happen?
+          if (device == null) {
+            return
+          }
 
-        // No device name
-        if (deviceName.isNullOrEmpty()) {
-          return
+          val deviceName = scanResult?.scanRecord?.deviceName
+
+          // No device name
+          if (deviceName.isNullOrEmpty()) {
+            return
+          }
+
+          val serviceUuid = scanResult.scanRecord?.serviceUuids?.getOrNull(0)?.toString()
+          if (serviceUuid != null && !espDevices.containsKey(deviceName)) {
+            val espDevice = ESPDevice(reactApplicationContext, transportEnum, securityEnum)
+            espDevice.bluetoothDevice = device
+            espDevice.deviceName = deviceName
+            espDevice.primaryServiceUuid = serviceUuid
+            espDevices[deviceName] = espDevice
+          }
         }
 
-        val serviceUuid = scanResult.scanRecord?.serviceUuids?.getOrNull(0)?.toString()
-        if (serviceUuid != null && !espDevices.containsKey(deviceName)) {
-          val espDevice = ESPDevice(reactApplicationContext, transportEnum, securityEnum)
-          espDevice.bluetoothDevice = device
-          espDevice.deviceName = deviceName
-          espDevice.primaryServiceUuid = serviceUuid
-          espDevices[deviceName] = espDevice
+        override fun scanCompleted() {
+          if (espDevices.size == 0) {
+            promise?.reject(Error("No bluetooth device found with given prefix"))
+            return
+          }
+
+          val resultArray = Arguments.createArray()
+
+          espDevices.values.forEach { espDevice ->
+            val resultMap = Arguments.createMap()
+            resultMap.putString("name", espDevice.deviceName)
+            resultMap.putString("transport", transport)
+            resultMap.putInt("security", security.toInt())
+
+            resultArray.pushMap(resultMap)
+          }
+
+          promise?.resolve(resultArray)
         }
+
+        override fun onFailure(e: Exception?) {
+          if (e != null) {
+            promise?.reject(e)
+          }
+        }
+      })
+    } else {
+      if (!hasWifiPermission() || !hasFineLocationPermission()) {
+        promise?.reject(Error("Missing one of the following permissions: CHANGE_WIFI_STATE, ACCESS_WIFI_STATE, ACCESS_NETWORK_STATE, ACCESS_FINE_LOCATION"))
       }
 
-      override fun scanCompleted() {
-        if (espDevices.size == 0) {
-          promise?.reject(Error("No bluetooth device found with given prefix"))
-          return
+      espProvisionManager.searchWiFiEspDevices(devicePrefix, object : WiFiScanListener {
+        override fun onWifiListReceived(wifiList: ArrayList<WiFiAccessPoint>?) {
+          if (wifiList?.size == 0) {
+            promise?.reject(Error("No wifi device found with given prefix"))
+            return
+          }
+
+          val resultArray = Arguments.createArray()
+
+          wifiList?.forEach { wiFiAccessPoint ->
+            val espDevice = ESPDevice(reactApplicationContext, transportEnum, securityEnum)
+            espDevice.wifiDevice = wiFiAccessPoint
+            espDevice.deviceName = wiFiAccessPoint.wifiName
+            espDevices[wiFiAccessPoint.wifiName] = espDevice
+
+            val resultMap = Arguments.createMap()
+
+            resultMap.putString("name", wiFiAccessPoint.wifiName)
+            resultMap.putString("transport", transport)
+            resultMap.putInt("security", wiFiAccessPoint.security)
+
+            resultArray.pushMap(resultMap)
+          }
+
+          promise?.resolve(resultArray)
         }
 
-        val resultArray = Arguments.createArray()
-
-        espDevices.values.forEach { espDevice ->
-          val resultMap = Arguments.createMap()
-          resultMap.putString("name", espDevice.deviceName)
-          resultMap.putString("transport", transport)
-          resultMap.putInt("security", security.toInt())
-
-          resultArray.pushMap(resultMap)
+        override fun onWiFiScanFailed(e: Exception?) {
+          if (e != null) {
+            promise?.reject(e)
+          }
         }
-
-        promise?.resolve(resultArray)
-      }
-
-      override fun onFailure(e: Exception?) {
-        promise?.reject(e)
-      }
-    })
+      })
+    }
   }
 
   @SuppressLint("MissingPermission")
@@ -215,22 +257,40 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       }
     }
 
-    // If the bluetooth device does not exist, try using the bonded one (if it exists)
-    if (espDevice?.bluetoothDevice == null) {
-      espDevice?.bluetoothDevice = bluetoothAdapter.bondedDevices.find {
-          bondedDevice -> bondedDevice.name == deviceName
+    if (transportEnum == ESPConstants.TransportType.TRANSPORT_BLE) {
+      // If the bluetooth device does not exist, try using the bonded one (if it exists)
+      if (espDevice?.bluetoothDevice == null) {
+        espDevice?.bluetoothDevice = bluetoothAdapter.bondedDevices.find { bondedDevice ->
+          bondedDevice.name == deviceName
+        }
       }
-    }
 
-    // If the bluetooth device exists and we have a primary service uuid, we will be able to connect to it
-    if (espDevice?.bluetoothDevice != null && espDevice.primaryServiceUuid != null) {
-      espDevice.proofOfPossession = proofOfPossession
-      if (username != null) {
-        espDevice.userName = username
+      // If the bluetooth device exists and we have a primary service uuid, we will be able to connect to it
+      if (espDevice?.bluetoothDevice != null && espDevice.primaryServiceUuid != null) {
+        espDevice.proofOfPossession = proofOfPossession
+        if (username != null) {
+          espDevice.userName = username
+        }
+
+        val result = Arguments.createMap()
+        result.putString("name", espDevice.deviceName)
+        result.putString("transport", transport)
+        result.putInt("security", security.toInt())
+
+        promise?.resolve(result)
+        return
+      }
+    } else {
+      if (espDevice?.wifiDevice == null) {
+        val wifiDevice = WiFiAccessPoint()
+        wifiDevice.wifiName = deviceName
+        wifiDevice.password = softAPPassword
+
+        espDevice?.wifiDevice = wifiDevice
       }
 
       val result = Arguments.createMap()
-      result.putString("name", espDevice.deviceName)
+      result.putString("name", espDevice?.deviceName)
       result.putString("transport", transport)
       result.putInt("security", security.toInt())
 
@@ -261,45 +321,44 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
         promise?.resolve(result)
       }
 
-      override fun reject(p0: String?, p1: String?) {
-        promise?.reject(p0, p1)
+      override fun reject(message: String) {
+        promise?.reject(message)
       }
 
-      override fun reject(p0: String?, p1: Throwable?) {
-        promise?.reject(p0, p1)
+      override fun reject(code: String, userInfo: WritableMap) {
+        promise?.reject(code, userInfo)
       }
 
-      override fun reject(p0: String?, p1: String?, p2: Throwable?) {
-        promise?.reject(p0, p1, p2)
+      override fun reject(code: String, message: String?) {
+        promise?.reject(code, message)
       }
 
-      override fun reject(p0: Throwable?) {
-        promise?.reject(p0)
+      override fun reject(code: String, message: String?, userInfo: WritableMap) {
+        promise?.reject(code, message, userInfo)
       }
 
-      override fun reject(p0: Throwable?, p1: WritableMap?) {
-        promise?.reject(p0, p1)
+      override fun reject(code: String, message: String?, throwable: Throwable?) {
+        promise?.reject(code, message, throwable)
       }
 
-      override fun reject(p0: String?, p1: WritableMap) {
-        promise?.reject(p0, p1)
+      override fun reject(code: String, throwable: Throwable?) {
+        promise?.reject(code, throwable)
       }
 
-      override fun reject(p0: String?, p1: Throwable?, p2: WritableMap?) {
-        promise?.reject(p0, p1, p2)
+      override fun reject(code: String, throwable: Throwable?, userInfo: WritableMap) {
+        promise?.reject(code, throwable, userInfo)
       }
 
-      override fun reject(p0: String?, p1: String?, p2: WritableMap) {
-        promise?.reject(p0, p1, p2)
+      override fun reject(code: String?, message: String?, throwable: Throwable?, userInfo: WritableMap?) {
+        promise?.reject(code, message, throwable, userInfo)
       }
 
-      override fun reject(p0: String?, p1: String?, p2: Throwable?, p3: WritableMap?) {
-        promise?.reject(p0, p1, p2, p3)
+      override fun reject(throwable: Throwable) {
+        promise?.reject(throwable)
       }
 
-      @Deprecated("Deprecated in Java", ReplaceWith("promise?.reject(p0)"))
-      override fun reject(p0: String?) {
-        promise?.reject(p0)
+      override fun reject(throwable: Throwable, userInfo: WritableMap) {
+        promise?.reject(throwable, userInfo)
       }
     })
   }
@@ -369,7 +428,9 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       }
 
       override fun onFailure(e: Exception?) {
-        promise?.reject(e)
+        if (e != null) {
+          promise?.reject(e)
+        }
       }
     })
   }
@@ -397,7 +458,9 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       }
 
       override fun onWiFiScanFailed(e: Exception?) {
-        promise?.reject(e)
+        if (e != null) {
+          promise?.reject(e)
+        }
       }
     })
   }
@@ -416,7 +479,9 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
 
     espDevice.provision(ssid, passphrase, object : ProvisionListener {
       override fun createSessionFailed(e: Exception?) {
-        promise?.reject(e)
+        if (e != null) {
+          promise?.reject(e)
+        }
       }
 
       override fun wifiConfigSent() {
@@ -424,7 +489,9 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       }
 
       override fun wifiConfigFailed(e: Exception?) {
-        promise?.reject(e)
+        if (e != null) {
+          promise?.reject(e)
+        }
       }
 
       override fun wifiConfigApplied() {
@@ -432,7 +499,9 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       }
 
       override fun wifiConfigApplyFailed(e: Exception?) {
-        promise?.reject(e)
+        if (e != null) {
+          promise?.reject(e)
+        }
       }
 
       override fun provisioningFailedFromDevice(failureReason: ESPConstants.ProvisionFailureReason?) {
@@ -446,7 +515,9 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       }
 
       override fun onProvisioningFailed(e: Exception?) {
-        promise?.reject(e)
+        if (e != null) {
+          promise?.reject(e)
+        }
       }
     })
   }
