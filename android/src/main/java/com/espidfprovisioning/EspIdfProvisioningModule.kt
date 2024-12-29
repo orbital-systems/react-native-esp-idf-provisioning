@@ -45,6 +45,7 @@ fun BluetoothDevice.isAlreadyConnected(): Boolean {
   }
 }
 
+@OptIn(kotlin.ExperimentalStdlibApi::class) 
 class EspIdfProvisioningModule internal constructor(context: ReactApplicationContext?) : EspIdfProvisioningSpec(context) {
   override fun getName(): String {
     return NAME
