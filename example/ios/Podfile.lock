@@ -1246,7 +1246,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-esp-idf-provisioning (0.4.4):
+  - react-native-esp-idf-provisioning (0.4.5):
     - DoubleConversion
     - ESPProvision (~> 3.0)
     - glog
@@ -1927,7 +1927,7 @@ SPEC CHECKSUMS:
   React-logger: addd140841248966c2547eb94836399cc1061f4d
   React-Mapbuffer: 029b5332e78af8c67c4b5e65edfc717068b8eac1
   React-microtasksnativemodule: f30949ee318ba90b9668de1e325b98838b9a4da2
-  react-native-esp-idf-provisioning: 9b5dae77f129a6500023f6c16f706698b0631ab7
+  react-native-esp-idf-provisioning: 1b53ad4985b33b0d76a3c1f104cba4422a839a12
   react-native-safe-area-context: 819935871d06a80e963546208027f839aa972a85
   React-nativeconfig: 470fce6d871c02dc5eff250a362d56391b7f52d6
   React-NativeModulesApple: 1586448c61a7c2bd4040cc03ccde66a72037e77e
