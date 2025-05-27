@@ -83,3 +83,5 @@ example/.yarn/*
 !example/.yarn/releases
 !example/.yarn/sdks
 !example/.yarn/versions
+
+.kotlin/

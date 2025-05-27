@@ -1,6 +1,4 @@
-import { Icon, createTheme, lightColors } from '@rneui/themed';
-import * as React from 'react';
-
+import { createTheme, lightColors } from '@rneui/themed';
 import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
@@ -94,12 +92,6 @@ export const theme = createTheme({
         fontSize: 16,
         fontWeight: 'normal',
       },
-      checkedIcon: (
-        <Icon type="material-community" name="checkbox-marked-outline" />
-      ),
-      uncheckedIcon: (
-        <Icon type="material-community" name="checkbox-blank-outline" />
-      ),
       containerStyle: {
         paddingHorizontal: 0,
         paddingVertical: 8,
