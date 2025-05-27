@@ -1336,7 +1336,7 @@ PODS:
     - React-jsiexecutor
     - React-RCTFBReactNativeSpec
     - ReactCommon/turbomodule/core
-  - react-native-esp-idf-provisioning (0.4.5):
+  - react-native-esp-idf-provisioning (0.4.6):
     - DoubleConversion
     - ESPProvision (~> 3.0.3)
     - glog
@@ -2117,7 +2117,7 @@ SPEC CHECKSUMS:
   React-logger: 8edfcedc100544791cd82692ca5a574240a16219
   React-Mapbuffer: c3f4b608e4a59dd2f6a416ef4d47a14400194468
   React-microtasksnativemodule: 054f34e9b82f02bd40f09cebd4083828b5b2beb6
-  react-native-esp-idf-provisioning: 81c269fc1d2451c9941ffb9cb4c7862dd452160b
+  react-native-esp-idf-provisioning: 8ad17663b9436655fb82b6f5c073be018923d603
   react-native-safe-area-context: 5594ec631ede9c311c5c0efa244228eff845ce88
   React-NativeModulesApple: 2c4377e139522c3d73f5df582e4f051a838ff25e
   React-oscompat: ef5df1c734f19b8003e149317d041b8ce1f7d29c
