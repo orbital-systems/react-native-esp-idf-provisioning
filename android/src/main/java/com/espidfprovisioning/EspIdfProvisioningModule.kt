@@ -45,7 +45,7 @@ fun BluetoothDevice.isAlreadyConnected(): Boolean {
   }
 }
 
-@OptIn(kotlin.ExperimentalStdlibApi::class) 
+@OptIn(kotlin.ExperimentalStdlibApi::class)
 class EspIdfProvisioningModule internal constructor(context: ReactApplicationContext?) : EspIdfProvisioningSpec(context) {
   override fun getName(): String {
     return NAME
@@ -333,36 +333,32 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
         promise?.resolve(result)
       }
 
-      override fun reject(message: String) {
-        promise?.reject(message)
-      }
-
-      override fun reject(code: String, userInfo: WritableMap) {
-        promise?.reject(code, userInfo)
-      }
-
-      override fun reject(code: String, message: String?) {
+      override fun reject(code: String?, message: String?) {
         promise?.reject(code, message)
       }
 
-      override fun reject(code: String, message: String?, userInfo: WritableMap) {
-        promise?.reject(code, message, userInfo)
+      override fun reject(code: String?, throwable: Throwable?) {
+        promise?.reject(code, throwable);
       }
 
-      override fun reject(code: String, message: String?, throwable: Throwable?) {
+      override fun reject(
+        code: String?,
+        message: String?,
+        throwable: Throwable?
+      ) {
         promise?.reject(code, message, throwable)
-      }
-
-      override fun reject(code: String, throwable: Throwable?) {
-        promise?.reject(code, throwable)
-      }
-
-      override fun reject(code: String, throwable: Throwable?, userInfo: WritableMap) {
-        promise?.reject(code, throwable, userInfo)
       }
 
       override fun reject(code: String?, message: String?, throwable: Throwable?, userInfo: WritableMap?) {
         promise?.reject(code, message, throwable, userInfo)
+      }
+
+      @Deprecated(
+        "Prefer passing a module-specific error code to JS. Using this method will pass the\n        error code EUNSPECIFIED",
+        replaceWith = ReplaceWith("reject(code, message)")
+      )
+      override fun reject(message: String) {
+        promise?.reject(message)
       }
 
       override fun reject(throwable: Throwable) {
@@ -371,6 +367,26 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
 
       override fun reject(throwable: Throwable, userInfo: WritableMap) {
         promise?.reject(throwable, userInfo)
+      }
+
+      override fun reject(code: String?, userInfo: WritableMap) {
+        promise?.reject(code, userInfo)
+      }
+
+      override fun reject(
+        code: String?,
+        throwable: Throwable?,
+        userInfo: WritableMap
+      ) {
+        promise?.reject(code, throwable, userInfo)
+      }
+
+      override fun reject(
+        code: String?,
+        message: String?,
+        userInfo: WritableMap
+      ) {
+        promise?.reject(code, message, userInfo)
       }
     })
   }
