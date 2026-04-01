@@ -93,12 +93,6 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       2 -> ESPConstants.SecurityType.SECURITY_2
       else -> ESPConstants.SecurityType.SECURITY_2
     }
-    val normalizedProofOfPossession =
-      if (securityEnum == ESPConstants.SecurityType.SECURITY_0) {
-        proofOfPossession ?: ""
-      } else {
-        proofOfPossession
-      }
 
     espDevices.clear()
     if (transportEnum == ESPConstants.TransportType.TRANSPORT_BLE) {
@@ -239,6 +233,12 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       2 -> ESPConstants.SecurityType.SECURITY_2
       else -> ESPConstants.SecurityType.SECURITY_2
     }
+    val normalizedProofOfPossession =
+      if (securityEnum == ESPConstants.SecurityType.SECURITY_0) {
+        proofOfPossession ?: ""
+      } else {
+        proofOfPossession
+      }
 
     // If no ESP device found in list (no scan has been performed), create a new one
     var espDevice = espDevices[deviceName];
