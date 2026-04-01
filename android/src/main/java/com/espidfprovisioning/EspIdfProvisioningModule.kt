@@ -250,12 +250,6 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
     username: String?,
     promise: Promise?
   ) {
-    // Permission checks
-    if (!hasBluetoothPermissions()) {
-      promise?.reject(Error("Missing one of the following permissions: BLUETOOTH, BLUETOOTH_ADMIN, BLUETOOTH_CONNECT, BLUETOOTH_SCAN"))
-      return
-    }
-
     val transportEnum = when (transport) {
       "softap" -> ESPConstants.TransportType.TRANSPORT_SOFTAP
       "ble" -> ESPConstants.TransportType.TRANSPORT_BLE
@@ -295,6 +289,11 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
     }
 
     if (transportEnum == ESPConstants.TransportType.TRANSPORT_BLE) {
+      if (!hasBluetoothPermissions()) {
+        promise?.reject(Error("Missing one of the following permissions: BLUETOOTH, BLUETOOTH_ADMIN, BLUETOOTH_CONNECT, BLUETOOTH_SCAN"))
+        return
+      }
+
       // If the bluetooth device does not exist, try using the bonded one (if it exists)
       if (espDevice?.bluetoothDevice == null) {
         espDevice?.bluetoothDevice = bluetoothAdapter.bondedDevices.find { bondedDevice ->
