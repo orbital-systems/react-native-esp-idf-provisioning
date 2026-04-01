@@ -60,4 +60,36 @@ describe('ESPDevice.connect', () => {
       null
     );
   });
+
+  it('rejects secure2 devices without a proof of possession', async () => {
+    const { ESPDevice, ESPSecurity, ESPTransport } = require('../index');
+
+    const device = new ESPDevice({
+      name: 'PROV_789',
+      transport: ESPTransport.ble,
+      security: ESPSecurity.secure2,
+    });
+
+    await expect(device.connect(null, null, 'user')).rejects.toThrow(
+      'Proof of possession is required for devices using ESPSecurity.secure2.'
+    );
+
+    expect(mockCreateESPDevice).not.toHaveBeenCalled();
+  });
+
+  it('rejects secure2 devices without a username', async () => {
+    const { ESPDevice, ESPSecurity, ESPTransport } = require('../index');
+
+    const device = new ESPDevice({
+      name: 'PROV_999',
+      transport: ESPTransport.ble,
+      security: ESPSecurity.secure2,
+    });
+
+    await expect(device.connect('pop', null, null)).rejects.toThrow(
+      'Username is required for devices using ESPSecurity.secure2.'
+    );
+
+    expect(mockCreateESPDevice).not.toHaveBeenCalled();
+  });
 });

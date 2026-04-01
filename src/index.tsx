@@ -87,6 +87,20 @@ export class ESPDevice implements ESPDeviceInterface {
       proofOfPossession
     );
 
+    if (this.security === ESPSecurity.secure2) {
+      if (!normalizedProofOfPossession) {
+        throw new Error(
+          'Proof of possession is required for devices using ESPSecurity.secure2.'
+        );
+      }
+
+      if (!username) {
+        throw new Error(
+          'Username is required for devices using ESPSecurity.secure2.'
+        );
+      }
+    }
+
     await EspIdfProvisioning.createESPDevice(
       this.name,
       this.transport,
