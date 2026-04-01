@@ -31,6 +31,20 @@ const EspIdfProvisioning = EspIdfProvisioningModule
       }
     );
 
+function normalizeProofOfPossession(
+  security: ESPSecurity,
+  proofOfPossession: string | null | undefined
+): string | null {
+  if (
+    security === ESPSecurity.unsecure &&
+    (proofOfPossession === null || proofOfPossession === undefined)
+  ) {
+    return '';
+  }
+
+  return proofOfPossession ?? null;
+}
+
 export class ESPDevice implements ESPDeviceInterface {
   name: string;
   transport: ESPTransport;
@@ -68,11 +82,16 @@ export class ESPDevice implements ESPDeviceInterface {
     softAPPassword: string | null = null,
     username: string | null = null
   ): Promise<void> {
+    const normalizedProofOfPossession = normalizeProofOfPossession(
+      this.security,
+      proofOfPossession
+    );
+
     await EspIdfProvisioning.createESPDevice(
       this.name,
       this.transport,
       this.security,
-      proofOfPossession,
+      normalizedProofOfPossession,
       softAPPassword,
       username
     );

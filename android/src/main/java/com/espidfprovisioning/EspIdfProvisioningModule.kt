@@ -93,6 +93,12 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       2 -> ESPConstants.SecurityType.SECURITY_2
       else -> ESPConstants.SecurityType.SECURITY_2
     }
+    val normalizedProofOfPossession =
+      if (securityEnum == ESPConstants.SecurityType.SECURITY_0) {
+        proofOfPossession ?: ""
+      } else {
+        proofOfPossession
+      }
 
     espDevices.clear()
     if (transportEnum == ESPConstants.TransportType.TRANSPORT_BLE) {
@@ -264,7 +270,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
 
       // If the bluetooth device exists and we have a primary service uuid, we will be able to connect to it
       if (espDevice?.bluetoothDevice != null && espDevice.primaryServiceUuid != null) {
-        espDevice.proofOfPossession = proofOfPossession
+        espDevice.proofOfPossession = normalizedProofOfPossession
         if (username != null) {
           espDevice.userName = username
         }
@@ -296,7 +302,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       }
 
       // Apply PoP and optional username for SoftAP as well
-      espDevice?.proofOfPossession = proofOfPossession
+      espDevice?.proofOfPossession = normalizedProofOfPossession
       if (username != null) {
         espDevice?.userName = username
       }
@@ -320,7 +326,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
         }
 
         // Configure proof of possession
-        espDevice.proofOfPossession = proofOfPossession
+        espDevice.proofOfPossession = normalizedProofOfPossession
         if (username != null) {
           espDevice.userName = username
         }
