@@ -79,6 +79,40 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
     return ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
   }
 
+  private fun isSecureSecurityType(securityType: ESPConstants.SecurityType): Boolean {
+    return securityType != ESPConstants.SecurityType.SECURITY_0
+  }
+
+  private fun getReportedSecurityType(espDevice: ESPDevice): ESPConstants.SecurityType? {
+    val versionInfo = espDevice.versionInfo ?: return null
+
+    return try {
+      val provInfo = JSONObject(versionInfo).getJSONObject("prov")
+
+      if (provInfo.has("sec_ver")) {
+        when (provInfo.optInt("sec_ver")) {
+          0 -> ESPConstants.SecurityType.SECURITY_0
+          1 -> ESPConstants.SecurityType.SECURITY_1
+          2 -> ESPConstants.SecurityType.SECURITY_2
+          else -> ESPConstants.SecurityType.SECURITY_2
+        }
+      } else if (espDevice.securityType == ESPConstants.SecurityType.SECURITY_2) {
+        ESPConstants.SecurityType.SECURITY_1
+      } else {
+        espDevice.securityType
+      }
+    } catch (e: JSONException) {
+      null
+    }
+  }
+
+  private fun hasSecurityMismatch(espDevice: ESPDevice): Boolean {
+    val reportedSecurityType = getReportedSecurityType(espDevice) ?: return false
+
+    return isSecureSecurityType(espDevice.securityType) !=
+      isSecureSecurityType(reportedSecurityType)
+  }
+
   @SuppressLint("MissingPermission")
   @ReactMethod
   override fun searchESPDevices(devicePrefix: String, transport: String, security: Double, promise: Promise?) {
@@ -429,9 +463,13 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       fun onEvent(event: DeviceConnectionEvent) {
         when (event.eventType) {
           ESPConstants.EVENT_DEVICE_CONNECTED -> {
-            val result = Arguments.createMap()
-            result.putString("status", "connected")
-            promise?.resolve(result)
+            if (hasSecurityMismatch(espDevice)) {
+              promise?.reject(Error("Security mismatch. The configured security type does not match the device."))
+            } else {
+              val result = Arguments.createMap()
+              result.putString("status", "connected")
+              promise?.resolve(result)
+            }
           }
           ESPConstants.EVENT_DEVICE_CONNECTION_FAILED -> {
             promise?.reject(Error("Device connection failed."))
