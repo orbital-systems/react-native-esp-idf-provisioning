@@ -12,6 +12,8 @@
     "lib",
     "android",
     "ios",
+    "plugin",
+    "app.plugin.js",
     "cpp",
     "*.podspec",
     "!lib/typescript/example",
@@ -81,8 +83,14 @@
     "@types/react": "17.0.21"
   },
   "peerDependencies": {
+    "expo": "*",
     "react": "*",
     "react-native": "*"
+  },
+  "peerDependenciesMeta": {
+    "expo": {
+      "optional": true
+    }
   },
   "engines": {
     "node": ">= 18.0.0"

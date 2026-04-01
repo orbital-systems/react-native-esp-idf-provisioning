@@ -17,6 +17,60 @@ QR code scanning is deliberately not supported. This can be done using other rea
 npm install @orbital-systems/react-native-esp-idf-provisioning
 ```
 
+### Expo
+
+For Expo prebuild / CNG projects, install with:
+
+```sh
+npx expo install @orbital-systems/react-native-esp-idf-provisioning
+```
+
+The package now ships with a root `app.plugin.js`, so `expo install` can add the
+plugin automatically in static Expo configs. The config plugin applies the iOS
+permission keys required for BLE and SoftAP provisioning, and explicitly adds
+the Android permissions used by the native module during prebuild.
+
+If your project uses a dynamic Expo config, add the plugin manually:
+
+```json
+{
+  "expo": {
+    "plugins": [
+      "@orbital-systems/react-native-esp-idf-provisioning"
+    ]
+  }
+}
+```
+
+Optional plugin props:
+
+```json
+{
+  "expo": {
+    "plugins": [
+      [
+        "@orbital-systems/react-native-esp-idf-provisioning",
+        {
+          "transport": "both",
+          "bluetoothAlwaysPermission": "Allow $(PRODUCT_NAME) to discover nearby ESP devices.",
+          "locationWhenInUsePermission": "Allow $(PRODUCT_NAME) to access your location while provisioning over Wi-Fi.",
+          "localNetworkPermission": "Allow $(PRODUCT_NAME) to communicate with devices on your local network while provisioning."
+        }
+      ]
+    ]
+  }
+}
+```
+
+Plugin props can also be set to `false` to skip adding the corresponding iOS
+permission string.
+
+`transport` controls which native permissions are added:
+
+- `"ble"` adds Bluetooth-related permissions only.
+- `"softap"` adds SoftAP/Wi-Fi-related permissions only.
+- `"both"` adds both sets of permissions. This is the default.
+
 ## Usage
 
 ```ts
@@ -129,7 +183,10 @@ See AndroidManifest.xml in the example project.
 
 - Since iOS 14, apps that communicate over local network are required to have the local network permission. Add key `NSLocalNetworkUsageDescription` in Info.plist with proper description. This permission is required to send/receive provisioning data with the SoftAP devices.
 
-- To use BLE, you must add an entry for NSBluetoothAlwaysUsageDescription to your app.json.
+- To use BLE, you must add an entry for `NSBluetoothAlwaysUsageDescription` to your app config.
+
+If you use Expo prebuild / CNG and enable this package's config plugin, those iOS
+entries are added automatically.
 
 ## Contributing
 
