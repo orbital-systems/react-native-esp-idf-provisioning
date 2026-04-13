@@ -22,7 +22,6 @@ import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactMethod
-import com.facebook.react.bridge.WritableMap
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
@@ -350,11 +349,12 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
     }
 
     // Exhausted our other options, perform search in hope of finding the device
-    searchESPDevices(deviceName, transport, security, object : Promise {
+    val targetPromise = promise ?: return
+    searchESPDevices(deviceName, transport, security, object : Promise by targetPromise {
       override fun resolve(p0: Any?) {
         // If search does not find the device, consider it not found
         val espDevice = espDevices[deviceName].guard {
-          promise?.reject(Error("Device not found."))
+          targetPromise.reject(Error("Device not found."))
           return
         }
 
@@ -369,63 +369,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
         result.putString("transport", transport)
         result.putInt("security", security.toInt())
 
-        promise?.resolve(result)
-      }
-
-      override fun reject(code: String?, message: String?) {
-        promise?.reject(code, message)
-      }
-
-      override fun reject(code: String?, throwable: Throwable?) {
-        promise?.reject(code, throwable);
-      }
-
-      override fun reject(
-        code: String?,
-        message: String?,
-        throwable: Throwable?
-      ) {
-        promise?.reject(code, message, throwable)
-      }
-
-      override fun reject(code: String?, message: String?, throwable: Throwable?, userInfo: WritableMap?) {
-        promise?.reject(code, message, throwable, userInfo)
-      }
-
-      @Deprecated(
-        "Prefer passing a module-specific error code to JS. Using this method will pass the\n        error code EUNSPECIFIED",
-        replaceWith = ReplaceWith("reject(code, message)")
-      )
-      override fun reject(message: String) {
-        promise?.reject(message)
-      }
-
-      override fun reject(throwable: Throwable) {
-        promise?.reject(throwable)
-      }
-
-      override fun reject(throwable: Throwable, userInfo: WritableMap) {
-        promise?.reject(throwable, userInfo)
-      }
-
-      override fun reject(code: String?, userInfo: WritableMap) {
-        promise?.reject(code, userInfo)
-      }
-
-      override fun reject(
-        code: String?,
-        throwable: Throwable?,
-        userInfo: WritableMap
-      ) {
-        promise?.reject(code, throwable, userInfo)
-      }
-
-      override fun reject(
-        code: String?,
-        message: String?,
-        userInfo: WritableMap
-      ) {
-        promise?.reject(code, message, userInfo)
+        targetPromise.resolve(result)
       }
     })
   }
