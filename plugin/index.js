@@ -24,6 +24,7 @@ const ANDROID_PERMISSIONS = [
 const ANDROID_SOFTAP_PERMISSIONS = [
   'android.permission.ACCESS_WIFI_STATE',
   'android.permission.CHANGE_WIFI_STATE',
+  'android.permission.CHANGE_NETWORK_STATE',
   'android.permission.ACCESS_FINE_LOCATION',
 ];
 
