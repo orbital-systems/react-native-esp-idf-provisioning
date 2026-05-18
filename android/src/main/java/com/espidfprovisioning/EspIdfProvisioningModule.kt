@@ -471,9 +471,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       }
 
       override fun onWiFiScanFailed(e: Exception?) {
-        if (e != null) {
-          promise?.reject(e)
-        }
+        promise?.reject(e ?: Exception("Unknown WiFi scan error"))
       }
     })
   }
