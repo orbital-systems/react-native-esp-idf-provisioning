@@ -46,9 +46,9 @@ const LEGACY_ANDROID_PERMISSIONS = [
   },
 ];
 
-function hasPermission(manifest, permission) {
-  return (manifest['uses-permission'] || []).some(
-    (item) => item.$['android:name'] === permission.name
+function findPermission(manifest, name) {
+  return (manifest['uses-permission'] || []).find(
+    (item) => item.$['android:name'] === name
   );
 }
 
@@ -57,21 +57,26 @@ function addPermission(manifest, permission) {
     manifest['uses-permission'] = [];
   }
 
-  if (hasPermission(manifest, permission)) {
-    return;
-  }
-
-  const entry = {
-    $: {
-      'android:name': permission.name,
-    },
+  const attributes = {
+    'android:name': permission.name,
   };
 
   if (permission.maxSdkVersion) {
-    entry.$['android:maxSdkVersion'] = permission.maxSdkVersion;
+    attributes['android:maxSdkVersion'] = permission.maxSdkVersion;
   }
 
-  manifest['uses-permission'].push(entry);
+  if (permission.usesPermissionFlags) {
+    attributes['android:usesPermissionFlags'] = permission.usesPermissionFlags;
+  }
+
+  const existing = findPermission(manifest, permission.name);
+
+  if (existing) {
+    Object.assign(existing.$, attributes);
+    return;
+  }
+
+  manifest['uses-permission'].push({ $: attributes });
 }
 
 function withEspIdfProvisioning(config, props = {}) {
