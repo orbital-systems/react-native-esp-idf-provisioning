@@ -8,6 +8,7 @@ const pkg = require('../package.json');
 
 const DEFAULTS = {
   transport: 'both',
+  neverForLocation: false,
   bluetoothAlwaysPermission:
     'Allow $(PRODUCT_NAME) to discover, connect and provision nearby Bluetooth devices.',
   locationWhenInUsePermission:
@@ -25,13 +26,6 @@ const ANDROID_SOFTAP_PERMISSIONS = [
   'android.permission.ACCESS_WIFI_STATE',
   'android.permission.CHANGE_WIFI_STATE',
   'android.permission.CHANGE_NETWORK_STATE',
-  'android.permission.ACCESS_FINE_LOCATION',
-];
-
-const ANDROID_BLE_PERMISSIONS = [
-  'android.permission.BLUETOOTH_SCAN',
-  'android.permission.BLUETOOTH_ADVERTISE',
-  'android.permission.BLUETOOTH_CONNECT',
   'android.permission.ACCESS_FINE_LOCATION',
 ];
 
@@ -102,9 +96,21 @@ function withEspIdfProvisioning(config, props = {}) {
     }
 
     if (usesBle) {
-      ANDROID_BLE_PERMISSIONS.forEach((name) => {
-        addPermission(manifest, { name });
+      addPermission(manifest, {
+        name: 'android.permission.BLUETOOTH_SCAN',
+        ...(permissions.neverForLocation
+          ? { usesPermissionFlags: 'neverForLocation' }
+          : {}),
       });
+      addPermission(manifest, { name: 'android.permission.BLUETOOTH_ADVERTISE' });
+      addPermission(manifest, { name: 'android.permission.BLUETOOTH_CONNECT' });
+      addPermission(manifest, {
+        name: 'android.permission.ACCESS_FINE_LOCATION',
+        ...(permissions.neverForLocation && !usesSoftap
+          ? { maxSdkVersion: '30' }
+          : {}),
+      });
+
       LEGACY_ANDROID_PERMISSIONS.forEach((permission) => {
         addPermission(manifest, permission);
       });

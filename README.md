@@ -52,6 +52,7 @@ Optional plugin props:
         "@orbital-systems/react-native-esp-idf-provisioning",
         {
           "transport": "both",
+          "neverForLocation": true,
           "bluetoothAlwaysPermission": "Allow $(PRODUCT_NAME) to discover nearby ESP devices.",
           "locationWhenInUsePermission": "Allow $(PRODUCT_NAME) to access your location while provisioning over Wi-Fi.",
           "localNetworkPermission": "Allow $(PRODUCT_NAME) to communicate with devices on your local network while provisioning."
@@ -70,6 +71,13 @@ permission string.
 - `"ble"` adds Bluetooth-related permissions only.
 - `"softap"` adds SoftAP/Wi-Fi-related permissions only.
 - `"both"` adds both sets of permissions. This is the default.
+
+
+`neverForLocation` (Android, default `false`) declares `BLUETOOTH_SCAN` with
+`android:usesPermissionFlags="neverForLocation"`, so BLE provisioning does not ask for
+location on Android 12+. Only enable it if your app never derives location from BLE.
+When `transport` is `"ble"`, `ACCESS_FINE_LOCATION` is additionally capped at
+`maxSdkVersion="30"`.
 
 ## Usage
 
