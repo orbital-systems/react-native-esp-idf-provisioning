@@ -6,10 +6,12 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.ScanResult
 import android.content.Context
+import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.espressif.provisioning.DeviceConnectionEvent
 import com.espressif.provisioning.ESPConstants
@@ -164,6 +166,37 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
     return ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
   }
 
+  /**
+   * From API 31 an app can declare BLUETOOTH_SCAN with usesPermissionFlags="neverForLocation",
+   * which decouples BLE scanning from location. Apps that do so must not be asked for
+   * ACCESS_FINE_LOCATION - there is no prompt for the user to grant. Apps that do not declare
+   * it still need location for scan results to be delivered, so the check is kept for them.
+   */
+  private fun requiresFineLocationForBleScan(): Boolean {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      return !declaresNeverForLocation()
+    }
+
+    return true
+  }
+
+  @RequiresApi(Build.VERSION_CODES.S)
+  private fun declaresNeverForLocation(): Boolean {
+    return try {
+      val packageInfo = reactApplicationContext.packageManager.getPackageInfo(
+        reactApplicationContext.packageName,
+        PackageManager.GET_PERMISSIONS
+      )
+      val index = packageInfo.requestedPermissions?.indexOf(Manifest.permission.BLUETOOTH_SCAN) ?: -1
+
+      index >= 0 &&
+        ((packageInfo.requestedPermissionsFlags?.getOrNull(index) ?: 0) and
+          PackageInfo.REQUESTED_PERMISSION_NEVER_FOR_LOCATION) != 0
+    } catch (e: PackageManager.NameNotFoundException) {
+      false
+    }
+  }
+
   private fun isSecureSecurityType(securityType: ESPConstants.SecurityType): Boolean {
     return securityType != ESPConstants.SecurityType.SECURITY_0
   }
@@ -217,7 +250,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
     espDevices.clear()
     if (transportEnum == ESPConstants.TransportType.TRANSPORT_BLE) {
       // Permission checks
-      if (!hasBluetoothPermissions() || !hasFineLocationPermission()) {
+      if (!hasBluetoothPermissions() || (requiresFineLocationForBleScan() && !hasFineLocationPermission())) {
         safePromise.reject(Error("Missing one of the following permissions: BLUETOOTH, BLUETOOTH_ADMIN, BLUETOOTH_CONNECT, BLUETOOTH_SCAN, ACCESS_FINE_LOCATION"))
         return
       }
@@ -318,7 +351,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
   @ReactMethod
   override fun stopESPDevicesSearch() {
     // Permission checks
-    if (!hasBluetoothPermissions() || !hasFineLocationPermission()) {
+    if (!hasBluetoothPermissions() || (requiresFineLocationForBleScan() && !hasFineLocationPermission())) {
       // If we don't have permissions we are probably not scanning either, so just return
       return
     }
@@ -437,7 +470,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       return
     }
 
-    if (!hasFineLocationPermission()) {
+    if (requiresFineLocationForBleScan() && !hasFineLocationPermission()) {
       safePromise.reject(Error("Missing one of the following permissions: ACCESS_FINE_LOCATION"))
       return
     }
