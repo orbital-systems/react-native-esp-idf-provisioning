@@ -8,6 +8,7 @@ const pkg = require('../package.json');
 
 const DEFAULTS = {
   transport: 'both',
+  neverForLocation: false,
   bluetoothAlwaysPermission:
     'Allow $(PRODUCT_NAME) to discover, connect and provision nearby Bluetooth devices.',
   locationWhenInUsePermission:
@@ -28,13 +29,6 @@ const ANDROID_SOFTAP_PERMISSIONS = [
   'android.permission.ACCESS_FINE_LOCATION',
 ];
 
-const ANDROID_BLE_PERMISSIONS = [
-  'android.permission.BLUETOOTH_SCAN',
-  'android.permission.BLUETOOTH_ADVERTISE',
-  'android.permission.BLUETOOTH_CONNECT',
-  'android.permission.ACCESS_FINE_LOCATION',
-];
-
 const LEGACY_ANDROID_PERMISSIONS = [
   {
     name: 'android.permission.BLUETOOTH',
@@ -46,9 +40,9 @@ const LEGACY_ANDROID_PERMISSIONS = [
   },
 ];
 
-function hasPermission(manifest, permission) {
-  return (manifest['uses-permission'] || []).some(
-    (item) => item.$['android:name'] === permission.name
+function findPermission(manifest, name) {
+  return (manifest['uses-permission'] || []).find(
+    (item) => item.$['android:name'] === name
   );
 }
 
@@ -57,21 +51,26 @@ function addPermission(manifest, permission) {
     manifest['uses-permission'] = [];
   }
 
-  if (hasPermission(manifest, permission)) {
-    return;
-  }
-
-  const entry = {
-    $: {
-      'android:name': permission.name,
-    },
+  const attributes = {
+    'android:name': permission.name,
   };
 
   if (permission.maxSdkVersion) {
-    entry.$['android:maxSdkVersion'] = permission.maxSdkVersion;
+    attributes['android:maxSdkVersion'] = permission.maxSdkVersion;
   }
 
-  manifest['uses-permission'].push(entry);
+  if (permission.usesPermissionFlags) {
+    attributes['android:usesPermissionFlags'] = permission.usesPermissionFlags;
+  }
+
+  const existing = findPermission(manifest, permission.name);
+
+  if (existing) {
+    Object.assign(existing.$, attributes);
+    return;
+  }
+
+  manifest['uses-permission'].push({ $: attributes });
 }
 
 function withEspIdfProvisioning(config, props = {}) {
@@ -97,9 +96,21 @@ function withEspIdfProvisioning(config, props = {}) {
     }
 
     if (usesBle) {
-      ANDROID_BLE_PERMISSIONS.forEach((name) => {
-        addPermission(manifest, { name });
+      addPermission(manifest, {
+        name: 'android.permission.BLUETOOTH_SCAN',
+        ...(permissions.neverForLocation
+          ? { usesPermissionFlags: 'neverForLocation' }
+          : {}),
       });
+      addPermission(manifest, { name: 'android.permission.BLUETOOTH_ADVERTISE' });
+      addPermission(manifest, { name: 'android.permission.BLUETOOTH_CONNECT' });
+      addPermission(manifest, {
+        name: 'android.permission.ACCESS_FINE_LOCATION',
+        ...(permissions.neverForLocation && !usesSoftap
+          ? { maxSdkVersion: '30' }
+          : {}),
+      });
+
       LEGACY_ANDROID_PERMISSIONS.forEach((permission) => {
         addPermission(manifest, permission);
       });
