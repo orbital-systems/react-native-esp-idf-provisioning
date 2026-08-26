@@ -102,7 +102,6 @@ function withEspIdfProvisioning(config, props = {}) {
           ? { usesPermissionFlags: 'neverForLocation' }
           : {}),
       });
-      addPermission(manifest, { name: 'android.permission.BLUETOOTH_ADVERTISE' });
       addPermission(manifest, { name: 'android.permission.BLUETOOTH_CONNECT' });
       addPermission(manifest, {
         name: 'android.permission.ACCESS_FINE_LOCATION',
