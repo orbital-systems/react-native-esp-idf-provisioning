@@ -118,4 +118,47 @@ describe('ESPDevice.sendData', () => {
         'Request to send data to device failed: Write to BLE failed. Custom endpoint requests require an active provisioning session; if this happens after provision(), the device firmware may have already closed the session or disconnected the transport.'
       );
   });
+
+  it('still round-trips plain UTF-8 text, including characters above U+00FF', async () => {
+    const { ESPDevice, ESPSecurity, ESPTransport } = require('../index');
+
+    mockSendData.mockImplementation((_name: string, _path: string, base64Data: string) =>
+      Promise.resolve(base64Data)
+    );
+
+    const device = new ESPDevice({
+      name: 'PROV_TEXT',
+      transport: ESPTransport.ble,
+      security: ESPSecurity.secure2,
+    });
+
+    const response = await device.sendData('/custom-endpoint', '{"ssid":"Café ☕"}');
+
+    expect(response).toBe('{"ssid":"Café ☕"}');
+  });
+});
+
+describe('ESPDevice.sendRawData', () => {
+  beforeEach(() => {
+    mockSendData.mockClear();
+  });
+
+  it('round-trips raw bytes containing values >= 0x80 without corruption', async () => {
+    const { ESPDevice, ESPSecurity, ESPTransport } = require('../index');
+
+    mockSendData.mockImplementation((_name: string, _path: string, base64Data: string) =>
+      Promise.resolve(base64Data)
+    );
+
+    const device = new ESPDevice({
+      name: 'PROV_RAW',
+      transport: ESPTransport.ble,
+      security: ESPSecurity.secure2,
+    });
+
+    const payload = new Uint8Array([0x56, 0x45, 0x52, 0x31, 0x94, 0x00]); // contains 0x94
+    const response = await device.sendRawData('/custom-endpoint', payload);
+
+    expect(Array.from(response)).toEqual(Array.from(payload));
+  });
 });
