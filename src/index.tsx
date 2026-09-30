@@ -116,15 +116,15 @@ export class ESPDevice implements ESPDeviceInterface {
   }
 
   /**
-   * Send data to the device.
+   * Send raw bytes to the device, bypassing text encoding entirely.
    * @param path The path to send the data to.
-   * @param data The data to send. The data should be a string. The data will be transferred with base64 encoding.
+   * @param data The raw bytes to send.
    * Custom endpoint requests require an active provisioning session. Some device firmware disconnects
    * BLE/SoftAP after successful provisioning, so calling this after provision() may fail unless the
    * device explicitly keeps the session available.
-   * @returns A promise that resolves with the response data.
+   * @returns A promise that resolves with the raw response bytes.
    */
-  async sendData(path: string, data: string): Promise<string> {
+  async sendRawData(path: string, data: Uint8Array): Promise<Uint8Array> {
     const base64Data = Buffer.from(data).toString('base64');
 
     try {
@@ -134,12 +134,26 @@ export class ESPDevice implements ESPDeviceInterface {
         base64Data
       );
 
-      return Buffer.from(returnData, 'base64').toString('utf8');
+      return new Uint8Array(Buffer.from(returnData, 'base64'));
     } catch (error) {
       throw new Error(
         `Request to send data to device failed: ${(error as Error)?.message ?? String(error)}. Custom endpoint requests require an active provisioning session; if this happens after provision(), the device firmware may have already closed the session or disconnected the transport.`
       );
     }
+  }
+
+  /**
+   * Send data to the device.
+   * @param path The path to send the data to.
+   * @param data The data to send. The data should be a string. The data will be transferred with base64 encoding.
+   * Custom endpoint requests require an active provisioning session. Some device firmware disconnects
+   * BLE/SoftAP after successful provisioning, so calling this after provision() may fail unless the
+   * device explicitly keeps the session available.
+   * @returns A promise that resolves with the response data.
+   */
+  async sendData(path: string, data: string): Promise<string> {
+    const response = await this.sendRawData(path, new Uint8Array(Buffer.from(data, 'utf8')));
+    return Buffer.from(response).toString('utf8');
   }
 
   /**
