@@ -1,4 +1,5 @@
-import { NativeModules, Platform } from 'react-native';
+import { DeviceEventEmitter, NativeModules, Platform } from 'react-native';
+import type { EmitterSubscription } from 'react-native';
 import { Buffer } from 'buffer';
 import { ESPSecurity, ESPTransport } from './types';
 import type {
@@ -12,6 +13,11 @@ const LINKING_ERROR =
   Platform.select({ ios: "- You have run 'pod install'\n", default: '' }) +
   '- You rebuilt the app after installing the package\n' +
   '- You are not using Expo Go\n';
+
+// Fired when a device disconnects after connect() already resolved, e.g. going out of
+// range or powering off mid-session. Not fired for the initial connection failure, which
+// connect() already rejects.
+export const ESP_DEVICE_DISCONNECTED_EVENT = 'EspIdfProvisioning.deviceDisconnected';
 
 // @ts-expect-error
 const isTurboModuleEnabled = global.__turboModuleProxy != null;
@@ -169,6 +175,25 @@ export class ESPDevice implements ESPDeviceInterface {
    */
   disconnect(): void {
     return EspIdfProvisioning.disconnect(this.name);
+  }
+
+  /**
+   * Subscribe to disconnects that happen after connect() has already resolved for this
+   * device, e.g. the device going out of range or powering off mid-session.
+   * @param callback Called when this device disconnects.
+   * @returns A function that unsubscribes the listener.
+   */
+  onDisconnected(callback: () => void): () => void {
+    const subscription: EmitterSubscription = DeviceEventEmitter.addListener(
+      ESP_DEVICE_DISCONNECTED_EVENT,
+      (event?: { deviceName?: string }) => {
+        if (!event?.deviceName || event.deviceName === this.name) {
+          callback();
+        }
+      }
+    );
+
+    return () => subscription.remove();
   }
 
   /**

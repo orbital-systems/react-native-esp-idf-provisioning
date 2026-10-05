@@ -7,13 +7,20 @@
 
 import Foundation
 import ESPProvision
+import React
 
 @objc(EspIdfProvisioning)
-class EspIdfProvisioning: NSObject {
+class EspIdfProvisioning: RCTEventEmitter {
     // Think we need to keep a dictionary of espDevices since we can't pass native
     // classes to react-native
     private var espDevices: [String : ESPDevice] = [:]
     private var softAPPasswords: [String : String] = [:]
+
+    static let deviceDisconnectedEventName = "EspIdfProvisioning.deviceDisconnected"
+
+    override func supportedEvents() -> [String]! {
+        return [EspIdfProvisioning.deviceDisconnectedEventName]
+    }
 
     @objc(searchESPDevices:transport:security:resolve:reject:)
     func searchESPDevices(devicePrefix: String, transport: String, security: Int, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
@@ -87,22 +94,31 @@ class EspIdfProvisioning: NSObject {
         }
 
         var invoked = false
-        espDevice.connect(completionHandler: { status in
-            // Prevent multiple callback invokation error
-            guard !invoked else { return }
-
+        espDevice.connect(completionHandler: { [weak self] status in
             switch status {
             case .connected:
+                // Prevent multiple callback invokation error
+                guard !invoked else { return }
+                invoked = true
                 resolve([
                     "status": "connected"
                 ])
-                invoked = true
             case .failedToConnect(let error):
+                guard !invoked else { return }
+                invoked = true
                 reject("error", error.description, nil)
-                invoked = true
             case .disconnected:
-                reject("error", "Device disconnected.", nil)
-                invoked = true
+                guard invoked else {
+                    invoked = true
+                    reject("error", "Device disconnected.", nil)
+                    return
+                }
+
+                // The promise already settled (connect() previously resolved). ESPDevice
+                // keeps re-invoking this same completionHandler on later status changes,
+                // so this is a genuine mid-session disconnect - forward it to JS instead
+                // of discarding it (see issue #142).
+                self?.sendEvent(withName: EspIdfProvisioning.deviceDisconnectedEventName, body: ["deviceName": deviceName])
             }
         })
     }
