@@ -26,6 +26,7 @@ import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactMethod
+import com.facebook.react.modules.core.DeviceEventManagerModule
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
@@ -73,6 +74,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
 
   companion object {
       const val NAME = "EspIdfProvisioning"
+      private const val EVENT_DEVICE_DISCONNECTED_JS = "EspIdfProvisioning.deviceDisconnected"
   }
 
   private val espProvisionManager = ESPProvisionManager.getInstance(context)
@@ -84,6 +86,10 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
   private var connectPromise: GuardedPromise? = null
   private var activeDevice: ESPDevice? = null
   private var connectTimeoutRunnable: Runnable? = null
+
+  // DeviceConnectionEvent is a global SDK broadcast without source-device data, so a
+  // disconnect can only be attributed to the most recently connected device, best-effort.
+  private var connectedDeviceName: String? = null
 
   private data class PendingConnect(val promise: GuardedPromise, val device: ESPDevice?)
 
@@ -111,6 +117,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
             if (espDevice != null && hasSecurityMismatch(espDevice)) {
               pendingConnect.promise.reject(Error("Security mismatch. The configured security type does not match the device."))
             } else {
+              connectedDeviceName = espDevice?.deviceName
               val result = Arguments.createMap()
               result.putString("status", "connected")
               pendingConnect.promise.resolve(result)
@@ -121,9 +128,18 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
           takePendingConnect()?.promise?.reject(Error("Device connection failed."))
         }
         ESPConstants.EVENT_DEVICE_DISCONNECTED -> {
-          // DeviceConnectionEvent is a global SDK broadcast without source-device data.
           // Do not settle a pending connect or operation from this event; the failure event
           // and per-operation callbacks are the only reliable Promise settlement sources.
+          // Forward it to JS as a device event instead, so consumers can observe disconnects
+          // that happen after connect() already resolved (see issue #142).
+          val deviceName = connectedDeviceName
+          connectedDeviceName = null
+
+          val eventPayload = Arguments.createMap()
+          deviceName?.let { eventPayload.putString("deviceName", it) }
+          reactApplicationContext
+            .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+            .emit(EVENT_DEVICE_DISCONNECTED_JS, eventPayload)
         }
         else -> {
           // Ignore intermediate events
