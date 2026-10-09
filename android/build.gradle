@@ -107,7 +107,7 @@ dependencies {
   implementation("com.facebook.react:react-native:+")
   implementation("com.github.espressif:esp-idf-provisioning-android:lib-2.2.3")
   implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-  implementation("org.greenrobot:eventbus")
+  implementation("org.greenrobot:eventbus:3.3.1")
 }
 
 if (isNewArchitectureEnabled()) {
