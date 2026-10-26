@@ -1,4 +1,4 @@
-import { NativeModules, Platform } from 'react-native';
+import { NativeEventEmitter, NativeModules, Platform } from 'react-native';
 import { Buffer } from 'buffer';
 import { ESPSecurity, ESPTransport } from './types';
 import type {
@@ -12,6 +12,15 @@ const LINKING_ERROR =
   Platform.select({ ios: "- You have run 'pod install'\n", default: '' }) +
   '- You rebuilt the app after installing the package\n' +
   '- You are not using Expo Go\n';
+
+// Fired when the connected device disconnects without the app asking for it, e.g. going out
+// of range or powering off mid-session. Not fired for disconnect(), for connecting another
+// device, or for a failed connect(), which connect() already rejects.
+export const ESP_DEVICE_DISCONNECTED_EVENT = 'EspIdfProvisioning.deviceDisconnected';
+
+// Error code requests reject with when the device is not connected or disconnects before
+// responding.
+export const ESP_DEVICE_DISCONNECTED_ERROR = 'E_DEVICE_DISCONNECTED';
 
 // @ts-expect-error
 const isTurboModuleEnabled = global.__turboModuleProxy != null;
@@ -30,6 +39,14 @@ const EspIdfProvisioning = EspIdfProvisioningModule
         },
       }
     );
+
+let eventEmitter: NativeEventEmitter | undefined;
+
+// Created lazily so a missing native module only throws once events are used
+function getEventEmitter(): NativeEventEmitter {
+  eventEmitter ??= new NativeEventEmitter(EspIdfProvisioning);
+  return eventEmitter;
+}
 
 function normalizeProofOfPossession(
   security: ESPSecurity,
@@ -71,7 +88,8 @@ export class ESPDevice implements ESPDeviceInterface {
   }
 
   /**
-   * Connect to the device.
+   * Connect to the device. Only one device is connected at a time: connecting disconnects the
+   * previously connected device, if any.
    * @param proofOfPossession The proof of possession to use for the device.
    * @param softAPPassword The soft AP password to use for the device.
    * @param username The username to use for the device.
@@ -136,8 +154,11 @@ export class ESPDevice implements ESPDeviceInterface {
 
       return new Uint8Array(Buffer.from(returnData, 'base64'));
     } catch (error) {
-      throw new Error(
-        `Request to send data to device failed: ${(error as Error)?.message ?? String(error)}. Custom endpoint requests require an active provisioning session; if this happens after provision(), the device firmware may have already closed the session or disconnected the transport.`
+      throw Object.assign(
+        new Error(
+          `Request to send data to device failed: ${(error as Error)?.message ?? String(error)}. Custom endpoint requests require an active provisioning session; if this happens after provision(), the device firmware may have already closed the session or disconnected the transport.`
+        ),
+        { code: (error as { code?: string })?.code }
       );
     }
   }
@@ -169,6 +190,27 @@ export class ESPDevice implements ESPDeviceInterface {
    */
   disconnect(): void {
     return EspIdfProvisioning.disconnect(this.name);
+  }
+
+  /**
+   * Subscribe to disconnects the app did not ask for, after connect() has resolved, e.g. the
+   * device going out of range or powering off mid-session. Not called for disconnect() or for
+   * connecting another device. Pending requests to the device reject with
+   * ESP_DEVICE_DISCONNECTED_ERROR either way.
+   * @param callback Called when this device disconnects.
+   * @returns A function that unsubscribes the listener.
+   */
+  onDisconnected(callback: () => void): () => void {
+    const subscription = getEventEmitter().addListener(
+      ESP_DEVICE_DISCONNECTED_EVENT,
+      (event: { deviceName: string }) => {
+        if (event.deviceName === this.name) {
+          callback();
+        }
+      }
+    );
+
+    return () => subscription.remove();
   }
 
   /**
