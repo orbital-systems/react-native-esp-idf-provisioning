@@ -146,6 +146,23 @@ const response = await device.sendData('/custom-endpoint', '{"foo":"bar"}');
 device.disconnect();
 ```
 
+### Disconnects
+
+Only one device is connected at a time. Connecting a device disconnects the previously connected one.
+
+If the device disconnects, requests to it (`scanWifiList`, `provision`, `sendData`) reject with the error code `E_DEVICE_DISCONNECTED` (exported as `ESP_DEVICE_DISCONNECTED_ERROR`) instead of hanging. To react to a disconnect the app didn't initiate (the device went out of range, powered off or reset), subscribe with `onDisconnected`:
+
+```ts
+const unsubscribe = device.onDisconnected(() => {
+  // Not called for device.disconnect() or for connecting another device
+});
+
+// Later
+unsubscribe();
+```
+
+On Android, SoftAP disconnects are not detected.
+
 ## Why use this library instead of alternatives?
 
 There have been several attempts to create a react-native bridge of Espressif's native libraries.
