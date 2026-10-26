@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothProfile
 import android.bluetooth.le.ScanResult
 import android.content.Context
 import android.content.pm.PackageInfo
@@ -26,6 +27,7 @@ import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactMethod
+import com.facebook.react.modules.core.DeviceEventManagerModule
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
@@ -34,6 +36,7 @@ import org.json.JSONObject
 import java.lang.Exception
 import java.util.ArrayList
 import java.util.Base64
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
 
@@ -49,19 +52,34 @@ fun BluetoothDevice.isAlreadyConnected(): Boolean {
   }
 }
 
-private class GuardedPromise(private val promise: Promise?) {
+private class GuardedPromise(private val promise: Promise?, private val onSettled: (() -> Unit)? = null) {
   private val settled = AtomicBoolean(false)
 
   fun resolve(value: Any?) {
-    if (settled.compareAndSet(false, true)) {
+    if (settle()) {
       promise?.resolve(value)
     }
   }
 
   fun reject(throwable: Throwable) {
-    if (settled.compareAndSet(false, true)) {
+    if (settle()) {
       promise?.reject(throwable)
     }
+  }
+
+  fun reject(code: String, message: String) {
+    if (settle()) {
+      promise?.reject(code, message)
+    }
+  }
+
+  private fun settle(): Boolean {
+    if (!settled.compareAndSet(false, true)) {
+      return false
+    }
+
+    onSettled?.invoke()
+    return true
   }
 }
 
@@ -73,32 +91,146 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
 
   companion object {
       const val NAME = "EspIdfProvisioning"
+      private const val EVENT_DEVICE_DISCONNECTED_JS = "EspIdfProvisioning.deviceDisconnected"
+      private const val E_DEVICE_DISCONNECTED = "E_DEVICE_DISCONNECTED"
   }
 
   private val espProvisionManager = ESPProvisionManager.getInstance(context)
-  private val espDevices = HashMap<String, ESPDevice>()
-  private val bluetoothAdapter = (context?.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter
+  private val espDevices = ConcurrentHashMap<String, ESPDevice>()
+  private val bluetoothManager = context?.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+  private val bluetoothAdapter = bluetoothManager.adapter
 
   private val mainHandler = Handler(Looper.getMainLooper())
   private val connectLock = Any()
   private var connectPromise: GuardedPromise? = null
   private var activeDevice: ESPDevice? = null
+  private var activeDeviceName: String? = null
   private var connectTimeoutRunnable: Runnable? = null
 
-  private data class PendingConnect(val promise: GuardedPromise, val device: ESPDevice?)
+  // Only one device is connected at a time, keyed by the deviceName passed to connect().
+  // DeviceConnectionEvent carries no source device, so this is what makes a disconnect
+  // attributable.
+  private var connectedDeviceName: String? = null
+  private var connectedDevice: ESPDevice? = null
+
+  // Promises waiting on a device response, rejected when that device disconnects
+  private val pendingPromises = HashMap<GuardedPromise, ESPDevice>()
+
+  private data class PendingConnect(val promise: GuardedPromise, val device: ESPDevice?, val deviceName: String?)
+
+  private data class Session(val deviceName: String, val device: ESPDevice)
 
   private fun takePendingConnect(): PendingConnect? {
     return synchronized(connectLock) {
       val promise = connectPromise ?: return@synchronized null
       val device = activeDevice
+      val deviceName = activeDeviceName
 
       connectTimeoutRunnable?.let { mainHandler.removeCallbacks(it) }
       connectTimeoutRunnable = null
       connectPromise = null
       activeDevice = null
+      activeDeviceName = null
 
-      PendingConnect(promise, device)
+      PendingConnect(promise, device, deviceName)
     }
+  }
+
+  private fun takeSession(): Session? {
+    return synchronized(connectLock) {
+      val deviceName = connectedDeviceName ?: return@synchronized null
+      val device = connectedDevice ?: return@synchronized null
+
+      connectedDeviceName = null
+      connectedDevice = null
+
+      Session(deviceName, device)
+    }
+  }
+
+  private fun trackPromise(espDevice: ESPDevice, promise: Promise?): GuardedPromise {
+    lateinit var safePromise: GuardedPromise
+    safePromise = GuardedPromise(promise) {
+      synchronized(pendingPromises) { pendingPromises.remove(safePromise) }
+    }
+    synchronized(pendingPromises) { pendingPromises[safePromise] = espDevice }
+    return safePromise
+  }
+
+  private fun rejectPendingPromises(espDevice: ESPDevice) {
+    val promises = synchronized(pendingPromises) {
+      pendingPromises.filterValues { it === espDevice }.keys.toList()
+    }
+    promises.forEach { it.reject(E_DEVICE_DISCONNECTED, "Device disconnected.") }
+  }
+
+  @SuppressLint("MissingPermission")
+  private fun isGattConnected(espDevice: ESPDevice): Boolean {
+    if (espDevice.transportType != ESPConstants.TransportType.TRANSPORT_BLE) {
+      return true
+    }
+
+    val bluetoothDevice = espDevice.bluetoothDevice ?: return false
+    return bluetoothManager.getConnectionState(bluetoothDevice, BluetoothProfile.GATT) == BluetoothProfile.STATE_CONNECTED
+  }
+
+  /**
+   * Whether deviceName is the connected device. If its connection dropped without the SDK
+   * reporting it, the session is ended here instead.
+   */
+  private fun isConnected(deviceName: String, espDevice: ESPDevice): Boolean {
+    val isSession = synchronized(connectLock) {
+      connectedDeviceName == deviceName && connectedDevice === espDevice
+    }
+    if (!isSession) {
+      return false
+    }
+
+    if (!isGattConnected(espDevice)) {
+      onConnectionLost()
+      return false
+    }
+
+    return true
+  }
+
+  /**
+   * Ends the session and replaces its ESPDevice. Neither the dropped GATT connection nor the
+   * transport's semaphore is released after a disconnect, so a reused ESPDevice would block
+   * the next request.
+   */
+  private fun endSession(session: Session) {
+    rejectPendingPromises(session.device)
+    session.device.disconnectDevice()
+
+    val freshDevice = ESPDevice(reactApplicationContext, session.device.transportType, session.device.securityType)
+    freshDevice.bluetoothDevice = session.device.bluetoothDevice
+    freshDevice.wifiDevice = session.device.wifiDevice
+    freshDevice.deviceName = session.device.deviceName
+    freshDevice.primaryServiceUuid = session.device.primaryServiceUuid
+    freshDevice.proofOfPossession = session.device.proofOfPossession
+    freshDevice.userName = session.device.userName
+    espDevices.replace(session.deviceName, session.device, freshDevice)
+  }
+
+  private fun onConnectionLost() {
+    val session = synchronized(connectLock) {
+      // The event has no source device: while our device is still connected it came from
+      // an earlier session
+      if (connectPromise != null || connectedDevice?.let { isGattConnected(it) } != false) {
+        return
+      }
+
+      takeSession()
+    } ?: return
+
+    endSession(session)
+
+    val eventPayload = Arguments.createMap()
+    eventPayload.putString("deviceName", session.deviceName)
+    reactApplicationContext
+      .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+      .emit(EVENT_DEVICE_DISCONNECTED_JS, eventPayload)
   }
 
   private val connectionEventListener = object {
@@ -111,6 +243,10 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
             if (espDevice != null && hasSecurityMismatch(espDevice)) {
               pendingConnect.promise.reject(Error("Security mismatch. The configured security type does not match the device."))
             } else {
+              synchronized(connectLock) {
+                connectedDeviceName = pendingConnect.deviceName
+                connectedDevice = espDevice
+              }
               val result = Arguments.createMap()
               result.putString("status", "connected")
               pendingConnect.promise.resolve(result)
@@ -118,12 +254,18 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
           }
         }
         ESPConstants.EVENT_DEVICE_CONNECTION_FAILED -> {
-          takePendingConnect()?.promise?.reject(Error("Device connection failed."))
+          val pendingConnect = takePendingConnect()
+          if (pendingConnect != null) {
+            pendingConnect.promise.reject(Error("Device connection failed."))
+          } else {
+            // A dropped connection is reported as a failure for some GATT statuses (e.g. 133)
+            onConnectionLost()
+          }
         }
         ESPConstants.EVENT_DEVICE_DISCONNECTED -> {
-          // DeviceConnectionEvent is a global SDK broadcast without source-device data.
-          // Do not settle a pending connect or operation from this event; the failure event
-          // and per-operation callbacks are the only reliable Promise settlement sources.
+          // Do not settle a pending connect from this event; the failure event and timeout
+          // are the only reliable settlement sources for it.
+          onConnectionLost()
         }
         else -> {
           // Ignore intermediate events
@@ -138,6 +280,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
 
   override fun invalidate() {
     takePendingConnect()?.promise?.reject(Error("Native module was invalidated."))
+    takeSession()?.let { endSession(it) }
 
     if (EventBus.getDefault().isRegistered(connectionEventListener)) {
       EventBus.getDefault().unregister(connectionEventListener)
@@ -543,9 +686,19 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       }
     }
 
+    // Only one device is connected at a time: end the previous session first
+    val previousSession = synchronized(connectLock) {
+      if (connectedDevice !== espDevice) takeSession() else null
+    }
+    previousSession?.let { endSession(it) }
+
     // If device is already connected, exit early
     if (espDevice.transportType == ESPConstants.TransportType.TRANSPORT_BLE &&
         espDevice.bluetoothDevice?.isAlreadyConnected() == true) {
+      synchronized(connectLock) {
+        connectedDeviceName = deviceName
+        connectedDevice = espDevice
+      }
       val result = Arguments.createMap()
       result.putString("status", "connected")
       safePromise.resolve(result)
@@ -564,6 +717,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
 
       connectPromise = safePromise
       activeDevice = espDevice
+      activeDeviceName = deviceName
       connectTimeoutRunnable = timeoutRunnable
       mainHandler.postDelayed(timeoutRunnable, 30000)
     }
@@ -577,18 +731,24 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
 
   @ReactMethod
   override fun sendData(deviceName: String, path: String, data: String, promise: Promise?) {
-    val safePromise = GuardedPromise(promise)
     val espDevice = espDevices[deviceName].guard {
-      safePromise.reject(Error("No ESP device found. Call createESPDevice first."))
+      promise?.reject(Error("No ESP device found. Call createESPDevice first."))
+      return
+    }
+
+    if (!isConnected(deviceName, espDevice)) {
+      promise?.reject(E_DEVICE_DISCONNECTED, "Device is not connected.")
       return
     }
 
     val decodedData = try {
       Base64.getDecoder().decode(data)
     } catch (e: Exception) {
-      safePromise.reject(e)
+      promise?.reject(e)
       return
     }
+
+    val safePromise = trackPromise(espDevice, promise)
 
     espDevice.sendDataToCustomEndPoint(path, decodedData, object : ResponseListener {
       override fun onSuccess(returnData: ByteArray?) {
@@ -604,11 +764,17 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
 
   @ReactMethod
   override fun scanWifiList(deviceName: String, promise: Promise?) {
-    val safePromise = GuardedPromise(promise)
     val espDevice = espDevices[deviceName].guard {
-      safePromise.reject(Error("No ESP device found. Call createESPDevice first."))
+      promise?.reject(Error("No ESP device found. Call createESPDevice first."))
       return
     }
+
+    if (!isConnected(deviceName, espDevice)) {
+      promise?.reject(E_DEVICE_DISCONNECTED, "Device is not connected.")
+      return
+    }
+
+    val safePromise = trackPromise(espDevice, promise)
 
     espDevice.scanNetworks(object : WiFiScanListener {
       override fun onWifiListReceived(wifiList: ArrayList<WiFiAccessPoint>?) {
@@ -633,16 +799,45 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
 
   @ReactMethod
   override fun disconnect(deviceName: String) {
-    espDevices[deviceName]?.disconnectDevice()
+    // Clear the session first so the resulting disconnect isn't reported as unexpected
+    val session = synchronized(connectLock) {
+      if (connectedDeviceName == deviceName) takeSession() else null
+    }
+
+    if (session != null) {
+      endSession(session)
+      return
+    }
+
+    espDevices[deviceName]?.let { espDevice ->
+      rejectPendingPromises(espDevice)
+      espDevice.disconnectDevice()
+    }
+  }
+
+  @ReactMethod
+  override fun addListener(eventName: String) {
+    // Events are emitted regardless of listeners; required by NativeEventEmitter
+  }
+
+  @ReactMethod
+  override fun removeListeners(count: Double) {
+    // Events are emitted regardless of listeners; required by NativeEventEmitter
   }
 
   @ReactMethod
   override fun provision(deviceName: String, ssid: String, passphrase: String, promise: Promise?) {
-    val safePromise = GuardedPromise(promise)
     val espDevice = espDevices[deviceName].guard {
-      safePromise.reject(Error("No ESP device found. Call createESPDevice first."))
+      promise?.reject(Error("No ESP device found. Call createESPDevice first."))
       return
     }
+
+    if (!isConnected(deviceName, espDevice)) {
+      promise?.reject(E_DEVICE_DISCONNECTED, "Device is not connected.")
+      return
+    }
+
+    val safePromise = trackPromise(espDevice, promise)
 
     espDevice.provision(ssid, passphrase, object : ProvisionListener {
       override fun createSessionFailed(e: Exception?) {
