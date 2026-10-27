@@ -105,7 +105,14 @@ dependencies {
   // For > 0.71, this will be replaced by `com.facebook.react:react-android:$version` by react gradle plugin
   //noinspection GradleDynamicVersion
   implementation("com.facebook.react:react-native:+")
-  implementation("com.github.espressif:esp-idf-provisioning-android:lib-2.2.3")
+  // The SDK's QR scanning APIs pull in CameraX, ML Kit, Play Services Vision and code-scanner.
+  // They're unused here, so exclude them (see the matching -dontwarn rules in proguard-rules.pro).
+  implementation("com.github.espressif:esp-idf-provisioning-android:lib-2.4.4") {
+    exclude group: "androidx.camera"
+    exclude group: "com.google.mlkit"
+    exclude group: "com.google.android.gms", module: "play-services-vision"
+    exclude group: "com.github.yuriy-budiyev", module: "code-scanner"
+  }
   implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
   implementation("org.greenrobot:eventbus:3.3.1")
 }

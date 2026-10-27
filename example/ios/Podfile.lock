@@ -1,7 +1,7 @@
 PODS:
-  - ESPProvision (3.0.3):
-    - ESPProvision/Core (= 3.0.3)
-  - ESPProvision/Core (3.0.3):
+  - ESPProvision (3.2.0):
+    - ESPProvision/Core (= 3.2.0)
+  - ESPProvision/Core (3.2.0):
     - SwiftProtobuf (~> 1.22.0)
   - FBLazyVector (0.84.1)
   - hermes-engine (250829098.0.9):
@@ -1405,7 +1405,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
   - react-native-esp-idf-provisioning (0.6.1):
-    - ESPProvision (~> 3.0.3)
+    - ESPProvision (~> 3.2)
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -2201,7 +2201,7 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
 SPEC CHECKSUMS:
-  ESPProvision: 2368cd8dabef74272f50c76290891a9674035929
+  ESPProvision: 336fdcdee7ea98b24e96e97534db855190ea979f
   FBLazyVector: e97c19a5a442429d1988f182a1940fb08df514da
   hermes-engine: e99f518bc25b4f35acc14bab911de1eaff1b914b
   RCTDeprecation: af44b104091a34482596cd9bd7e8d90c4e9b4bd7
@@ -2240,7 +2240,7 @@ SPEC CHECKSUMS:
   React-logger: b5521614afb8690420146dfc61a1447bb5d65419
   React-Mapbuffer: f4ee8c62e0ef8359d139124f35a471518a172cd3
   React-microtasksnativemodule: d1956f0eec54c619b63a379520fb4c618a55ccb9
-  react-native-esp-idf-provisioning: c082f710c16e04440a7ffc1bd2c97984fe075d5f
+  react-native-esp-idf-provisioning: 35cab22193fb143ed94c27f7b587b1d393ff18e7
   react-native-safe-area-context: ae7587b95fb580d1800c5b0b2a7bd48c2868e67a
   React-NativeModulesApple: 5ba0903927f6b8d335a091700e9fda143980f819
   React-networking: 3a4b7f9ed2b2d1c0441beacb79674323a24bcca6

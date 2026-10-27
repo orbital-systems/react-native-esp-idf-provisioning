@@ -252,6 +252,9 @@ class EspIdfProvisioning: RCTEventEmitter {
         DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
             promise.reject("error", "Device connection timed out.")
         }
+        // ESPBleTransport queues requests and never fails the in-flight one on disconnect, so a
+        // transport can stay stuck. The JS connect() calls createESPDevice first, which gives the
+        // device a fresh transport, so never connect the same ESPDevice twice without it.
         espDevice.bleDelegate = DisconnectObserver(module: self, espDevice: espDevice)
         espDevice.connect(completionHandler: { [weak self] status in
             switch status {
