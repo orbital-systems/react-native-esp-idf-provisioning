@@ -148,7 +148,7 @@ device.disconnect();
 
 ### Disconnects
 
-Only one device is connected at a time. Connecting a device disconnects the previously connected one.
+Only one device is connected at a time. Connecting a device or searching for devices disconnects the previously connected one, and so may recreating it with `createESPDevice`.
 
 If the device disconnects, requests to it (`scanWifiList`, `provision`, `sendData`) reject with the error code `E_DEVICE_DISCONNECTED` (exported as `ESP_DEVICE_DISCONNECTED_ERROR`) instead of hanging. To react to a disconnect the app didn't initiate (the device went out of range, powered off or reset), subscribe with `onDisconnected`:
 
@@ -161,7 +161,7 @@ const unsubscribe = device.onDisconnected(() => {
 unsubscribe();
 ```
 
-On Android, SoftAP disconnects are not detected.
+SoftAP disconnects are not detected.
 
 ## Why use this library instead of alternatives?
 
