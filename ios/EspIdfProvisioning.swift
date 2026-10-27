@@ -85,6 +85,8 @@ class EspIdfProvisioning: RCTEventEmitter {
     private var connectedDeviceName: String?
     private var connectedDevice: ESPDevice?
     private var pendingPromises: [ObjectIdentifier: DevicePromise] = [:]
+    private var isConnecting = false
+    private var hasListeners = false
 
     static let deviceDisconnectedEventName = "EspIdfProvisioning.deviceDisconnected"
     static let deviceDisconnectedErrorCode = "E_DEVICE_DISCONNECTED"
@@ -93,17 +95,23 @@ class EspIdfProvisioning: RCTEventEmitter {
         return [EspIdfProvisioning.deviceDisconnectedEventName]
     }
 
+    override func startObserving() { hasListeners = true }
+
+    override func stopObserving() { hasListeners = false }
+
     private func withState<T>(_ body: () -> T) -> T {
         stateLock.lock()
         defer { stateLock.unlock() }
         return body()
     }
 
-    private func trackPromise(espDevice: ESPDevice, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) -> DevicePromise {
+    // Call before isConnected(), so a disconnect in between still rejects the promise
+    private func trackPromise(espDevice: ESPDevice, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock, onSettled: (() -> Void)? = nil) -> DevicePromise {
         let promise = DevicePromise(espDevice: espDevice, resolve: resolve, reject: reject)
         let key = ObjectIdentifier(promise)
         promise.onSettled = { [weak self] in
             self?.withState { _ = self?.pendingPromises.removeValue(forKey: key) }
+            onSettled?()
         }
         withState { pendingPromises[key] = promise }
         return promise
@@ -118,28 +126,29 @@ class EspIdfProvisioning: RCTEventEmitter {
         return withState { connectedDeviceName == deviceName && connectedDevice === espDevice }
     }
 
-    private func takeConnectedDevice() -> ESPDevice? {
+    private func takeSession(where matches: (String, ESPDevice) -> Bool = { _, _ in true }) -> (name: String, device: ESPDevice)? {
         return withState {
-            let espDevice = connectedDevice
+            guard let name = connectedDeviceName, let device = connectedDevice, matches(name, device) else { return nil }
             connectedDevice = nil
             connectedDeviceName = nil
-            return espDevice
+            return (name, device)
         }
     }
 
+    // Clears the session first, so the resulting disconnect isn't reported as unexpected
+    private func endSession(where matches: (String, ESPDevice) -> Bool = { _, _ in true }) {
+        guard let session = takeSession(where: matches) else { return }
+        rejectPendingPromises(for: session.device)
+        session.device.disconnect()
+    }
+
     fileprivate func deviceDidDisconnect(_ espDevice: ESPDevice) {
-        let deviceName: String? = withState {
-            guard connectedDevice === espDevice else { return nil }
-            let deviceName = connectedDeviceName
-            connectedDevice = nil
-            connectedDeviceName = nil
-            return deviceName
-        }
+        let deviceName = takeSession { $1 === espDevice }?.name
 
         rejectPendingPromises(for: espDevice)
 
         // Disconnects requested through disconnect() or connect() have already cleared the session
-        if let deviceName = deviceName {
+        if let deviceName = deviceName, hasListeners {
             sendEvent(withName: EspIdfProvisioning.deviceDisconnectedEventName, body: ["deviceName": deviceName])
         }
     }
@@ -149,6 +158,8 @@ class EspIdfProvisioning: RCTEventEmitter {
         let transport = ESPTransport(rawValue: transport) ?? ESPTransport.ble
         let security = ESPSecurity(rawValue: security)
 
+        // Replacing the connected ESPDevice would orphan its session
+        endSession()
         self.espDevices.removeAll()
         
         var invoked = false
@@ -196,6 +207,8 @@ class EspIdfProvisioning: RCTEventEmitter {
                 return
             }
 
+            // Replacing the connected ESPDevice would orphan its session
+            self.endSession { name, _ in name == espDevice!.name }
             self.softAPPasswords[espDevice!.name] = softAPPassword
             self.espDevices[espDevice!.name] = espDevice
 
@@ -215,25 +228,40 @@ class EspIdfProvisioning: RCTEventEmitter {
             return
         }
 
+        let wasConnecting = withState { () -> Bool in
+            defer { isConnecting = true }
+            return isConnecting
+        }
+        guard !wasConnecting else {
+            reject("error", "Another device connection is already in progress.", nil)
+            return
+        }
+
         // Only one device is connected at a time: end the previous session first
-        if let previousDevice = takeConnectedDevice() {
-            rejectPendingPromises(for: previousDevice)
-            if previousDevice !== espDevice {
-                previousDevice.disconnect()
+        if let previous = takeSession() {
+            rejectPendingPromises(for: previous.device)
+            if previous.device !== espDevice {
+                previous.device.disconnect()
             }
         }
 
-        let promise = trackPromise(espDevice: espDevice, resolve: resolve, reject: reject)
+        let promise = trackPromise(espDevice: espDevice, resolve: resolve, reject: reject, onSettled: { [weak self] in
+            self?.withState { self?.isConnecting = false }
+        })
+        // The SDK may never call back (#56), which would block every later connect
+        DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
+            promise.reject("error", "Device connection timed out.")
+        }
         espDevice.bleDelegate = DisconnectObserver(module: self, espDevice: espDevice)
         espDevice.connect(completionHandler: { [weak self] status in
             switch status {
             case .connected:
-                self?.withState {
-                    self?.connectedDeviceName = deviceName
-                    self?.connectedDevice = espDevice
-                }
-                if !promise.resolve(["status": "connected"]) {
-                    _ = self?.takeConnectedDevice()
+                // Resolve first: a connect that was already rejected must not take over the session
+                if promise.resolve(["status": "connected"]) {
+                    self?.withState {
+                        self?.connectedDeviceName = deviceName
+                        self?.connectedDevice = espDevice
+                    }
                 }
             case .failedToConnect(let error):
                 promise.reject("error", error.description)
@@ -250,14 +278,14 @@ class EspIdfProvisioning: RCTEventEmitter {
             return
         }
 
-        guard isConnected(deviceName: deviceName, espDevice: espDevice) else {
-            reject(EspIdfProvisioning.deviceDisconnectedErrorCode, "Device is not connected.", nil)
-            return
-        }
-
         let data: Data = data.data(using: .utf8)!
         if let data = Data(base64Encoded: data) {
             let promise = trackPromise(espDevice: espDevice, resolve: resolve, reject: reject)
+            guard isConnected(deviceName: deviceName, espDevice: espDevice) else {
+                promise.reject(EspIdfProvisioning.deviceDisconnectedErrorCode, "Device is not connected.")
+                return
+            }
+
             espDevice.sendData(path: path, data: data, completionHandler: { data, error in
                 if error != nil {
                     promise.reject("error", error?.description)
@@ -278,20 +306,24 @@ class EspIdfProvisioning: RCTEventEmitter {
             return
         }
 
+        let promise = trackPromise(espDevice: espDevice, resolve: resolve, reject: reject)
         guard isConnected(deviceName: deviceName, espDevice: espDevice) else {
-            reject(EspIdfProvisioning.deviceDisconnectedErrorCode, "Device is not connected.", nil)
+            promise.reject(EspIdfProvisioning.deviceDisconnectedErrorCode, "Device is not connected.")
             return
         }
 
-        let promise = trackPromise(espDevice: espDevice, resolve: resolve, reject: reject)
         espDevice.scanWifiList(completionHandler: { wifiList, error in
             if error != nil {
                 if error?.code == ESPWiFiScanError.emptyResultCount.code {
                   promise.resolve([])
                 }
 
-                // Ignore error as per https://github.com/orbital-systems/react-native-esp-idf-provisioning/issues/22
+                // A result may still follow the error, so only reject if none arrives. See
+                // https://github.com/orbital-systems/react-native-esp-idf-provisioning/issues/22
                 // and https://github.com/espressif/esp-idf-provisioning-ios/issues/74
+                DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
+                    promise.reject("error", error?.description)
+                }
                 return
             }
 
@@ -308,14 +340,7 @@ class EspIdfProvisioning: RCTEventEmitter {
     @objc(disconnect:)
     func disconnect(deviceName: String) {
         // Clear the session first so the resulting disconnect isn't reported as unexpected
-        let connectedDevice: ESPDevice? = withState {
-            guard connectedDeviceName == deviceName else { return nil }
-            let espDevice = self.connectedDevice
-            self.connectedDevice = nil
-            connectedDeviceName = nil
-            return espDevice
-        }
-        guard let espDevice = connectedDevice ?? self.espDevices[deviceName] else {
+        guard let espDevice = takeSession(where: { name, _ in name == deviceName })?.device ?? self.espDevices[deviceName] else {
             return
         }
 
@@ -330,12 +355,12 @@ class EspIdfProvisioning: RCTEventEmitter {
             return
         }
 
+        let promise = trackPromise(espDevice: espDevice, resolve: resolve, reject: reject)
         guard isConnected(deviceName: deviceName, espDevice: espDevice) else {
-            reject(EspIdfProvisioning.deviceDisconnectedErrorCode, "Device is not connected.", nil)
+            promise.reject(EspIdfProvisioning.deviceDisconnectedErrorCode, "Device is not connected.")
             return
         }
 
-        let promise = trackPromise(espDevice: espDevice, resolve: resolve, reject: reject)
         espDevice.provision(ssid: ssid, passPhrase: passphrase, completionHandler: { status in
             switch status {
             case .success:
