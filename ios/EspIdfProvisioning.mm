@@ -3,8 +3,9 @@
 #else
 #import <React/RCTBridgeModule.h>
 #endif
+#import <React/RCTEventEmitter.h>
 
-@interface RCT_EXTERN_MODULE(EspIdfProvisioning, NSObject)
+@interface RCT_EXTERN_MODULE(EspIdfProvisioning, RCTEventEmitter)
     RCT_EXTERN_METHOD(searchESPDevices:(NSString *)devicePrefix
                       transport:(NSString *)location
                       security:(NSInteger)security

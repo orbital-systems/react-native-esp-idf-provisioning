@@ -34,6 +34,7 @@ export interface ESPDeviceInterface {
   sendRawData(path: string, data: Uint8Array): Promise<Uint8Array>;
   scanWifiList(): Promise<ESPWifiList[]>;
   disconnect(): void;
+  onDisconnected(callback: () => void): () => void;
   provision(ssid: string, passphrase: string): Promise<ESPStatusResponse>;
   getProofOfPossession(): Promise<string | undefined>;
   setProofOfPossession(proofOfPossession: string): Promise<this>;

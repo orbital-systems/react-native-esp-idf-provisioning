@@ -43,6 +43,8 @@ export interface Spec extends TurboModule {
   sendData(deviceName: string, path: string, data: string): Promise<string>;
   scanWifiList(deviceName: string): Promise<ESPWifiList>;
   disconnect(deviceName: string): void;
+  addListener(eventName: string): void;
+  removeListeners(count: number): void;
   provision(
     deviceName: string,
     ssid: string,

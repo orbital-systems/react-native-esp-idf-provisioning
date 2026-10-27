@@ -1,6 +1,8 @@
 const mockCreateESPDevice = jest.fn().mockResolvedValue({});
 const mockConnect = jest.fn().mockResolvedValue({ status: 'connected' });
 const mockSendData = jest.fn();
+const mockListeners = new Map<string, Set<(event: unknown) => void>>();
+const mockNativeEventEmitter = jest.fn();
 
 jest.mock('react-native', () => ({
   NativeModules: {
@@ -10,6 +12,17 @@ jest.mock('react-native', () => ({
       sendData: mockSendData,
     },
   },
+  NativeEventEmitter: jest.fn().mockImplementation((nativeModule) => {
+    mockNativeEventEmitter(nativeModule);
+    return {
+      addListener: (eventName: string, listener: (event: unknown) => void) => {
+        const listeners = mockListeners.get(eventName) ?? new Set();
+        listeners.add(listener);
+        mockListeners.set(eventName, listeners);
+        return { remove: () => listeners.delete(listener) };
+      },
+    };
+  }),
   Platform: {
     select: jest.fn((options) => options.default),
   },
@@ -160,5 +173,89 @@ describe('ESPDevice.sendRawData', () => {
     const response = await device.sendRawData('/custom-endpoint', payload);
 
     expect(Array.from(response)).toEqual(Array.from(payload));
+  });
+
+  it('keeps the native error code', async () => {
+    const { ESPDevice, ESPSecurity, ESPTransport, ESP_DEVICE_DISCONNECTED_ERROR } =
+      require('../index');
+
+    mockSendData.mockRejectedValueOnce(
+      Object.assign(new Error('Device is not connected.'), {
+        code: 'E_DEVICE_DISCONNECTED',
+      })
+    );
+
+    const device = new ESPDevice({
+      name: 'PROV_RAW',
+      transport: ESPTransport.ble,
+      security: ESPSecurity.secure2,
+    });
+
+    await expect(
+      device.sendRawData('/custom-endpoint', new Uint8Array([1]))
+    ).rejects.toMatchObject({ code: ESP_DEVICE_DISCONNECTED_ERROR });
+  });
+});
+
+describe('ESPDevice.onDisconnected', () => {
+  const emit = (event: unknown) =>
+    mockListeners
+      .get('EspIdfProvisioning.deviceDisconnected')
+      ?.forEach((listener) => listener(event));
+
+  beforeEach(() => {
+    mockListeners.clear();
+  });
+
+  it('subscribes through the native module so iOS emits the event', () => {
+    const { ESPDevice, ESPSecurity, ESPTransport } = require('../index');
+    const { NativeModules } = require('react-native');
+
+    const device = new ESPDevice({
+      name: 'PROV_EMITTER',
+      transport: ESPTransport.ble,
+      security: ESPSecurity.secure2,
+    });
+
+    device.onDisconnected(jest.fn());
+
+    expect(mockNativeEventEmitter).toHaveBeenCalledWith(
+      NativeModules.EspIdfProvisioning
+    );
+  });
+
+  it('only calls back for its own device', () => {
+    const { ESPDevice, ESPSecurity, ESPTransport } = require('../index');
+    const callback = jest.fn();
+
+    const device = new ESPDevice({
+      name: 'PROV_A',
+      transport: ESPTransport.ble,
+      security: ESPSecurity.secure2,
+    });
+
+    device.onDisconnected(callback);
+    emit({ deviceName: 'PROV_B' });
+    expect(callback).not.toHaveBeenCalled();
+
+    emit({ deviceName: 'PROV_A' });
+    expect(callback).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops calling back after unsubscribing', () => {
+    const { ESPDevice, ESPSecurity, ESPTransport } = require('../index');
+    const callback = jest.fn();
+
+    const device = new ESPDevice({
+      name: 'PROV_A',
+      transport: ESPTransport.ble,
+      security: ESPSecurity.secure2,
+    });
+
+    const unsubscribe = device.onDisconnected(callback);
+    unsubscribe();
+    emit({ deviceName: 'PROV_A' });
+
+    expect(callback).not.toHaveBeenCalled();
   });
 });

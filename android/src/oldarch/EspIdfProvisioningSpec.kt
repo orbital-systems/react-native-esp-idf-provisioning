@@ -12,6 +12,8 @@ abstract class EspIdfProvisioningSpec(context: ReactApplicationContext?) : React
     abstract fun sendData(deviceName: String, path: String, data: String, promise: Promise?)
     abstract fun scanWifiList(deviceName: String, promise: Promise?)
     abstract fun disconnect(deviceName: String)
+    abstract fun addListener(eventName: String)
+    abstract fun removeListeners(count: Double)
     abstract fun provision(deviceName: String, ssid: String, passphrase: String, promise: Promise?)
     abstract fun getProofOfPossession(deviceName: String, promise: Promise?)
     abstract fun setProofOfPossession(deviceName: String, proofOfPossession: String, promise: Promise?)
