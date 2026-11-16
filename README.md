@@ -199,10 +199,12 @@ enum ESPSecurity {
 enum ESPWifiAuthMode {
   open = 0,
   wep = 1,
-  wpa2Enterprise = 2,
+  wpaPsk = 2,
   wpa2Psk = 3,
-  wpaPsk = 4,
-  wpaWpa2Psk = 5,
+  wpaWpa2Psk = 4,
+  wpa2Enterprise = 5,
+  wpa3Psk = 6,
+  wpa2Wpa3Psk = 7,
 }
 ```
 
