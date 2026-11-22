@@ -72,6 +72,61 @@ private class DisconnectObserver: ESPBLEDelegate {
     }
 }
 
+// Reads the Bluetooth radio state, which ESPProvision doesn't expose: a scan with Bluetooth off
+// just finds nothing. The manager is created on first use, since creating it can show the
+// Bluetooth permission prompt, and kept so later reads answer at once. A new manager reports
+// .unknown until its first update, so reads wait for that, up to a timeout.
+private class BluetoothStateReader: NSObject, CBCentralManagerDelegate {
+    private static let settleTimeout: TimeInterval = 2
+
+    private let queue = DispatchQueue(label: "EspIdfProvisioning.bluetoothState")
+    private var centralManager: CBCentralManager?
+    private var waiters: [(CBManagerState) -> Void] = []
+
+    func read(_ completion: @escaping (CBManagerState) -> Void) {
+        queue.async {
+            if self.centralManager == nil {
+                // Don't show the system "Turn on Bluetooth" alert; callers decide what to tell the user
+                self.centralManager = CBCentralManager(delegate: self, queue: self.queue, options: [CBCentralManagerOptionShowPowerAlertKey: false])
+            }
+            guard let manager = self.centralManager, manager.state == .unknown else {
+                completion(self.centralManager?.state ?? .unknown)
+                return
+            }
+
+            var settled = false
+            let settle: (CBManagerState) -> Void = { state in
+                guard !settled else { return }
+                settled = true
+                completion(state)
+            }
+            self.waiters.append(settle)
+            self.queue.asyncAfter(deadline: .now() + BluetoothStateReader.settleTimeout) {
+                settle(manager.state)
+            }
+        }
+    }
+
+    func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        guard central.state != .unknown else { return }
+        let waiting = waiters
+        waiters.removeAll()
+        waiting.forEach { $0(central.state) }
+    }
+
+    static func name(of state: CBManagerState) -> String {
+        switch state {
+        case .poweredOn: return "poweredOn"
+        case .poweredOff: return "poweredOff"
+        case .unauthorized: return "unauthorized"
+        case .unsupported: return "unsupported"
+        case .resetting: return "resetting"
+        case .unknown: return "unknown"
+        @unknown default: return "unknown"
+        }
+    }
+}
+
 @objc(EspIdfProvisioning)
 class EspIdfProvisioning: RCTEventEmitter {
     // Think we need to keep a dictionary of espDevices since we can't pass native
@@ -90,6 +145,9 @@ class EspIdfProvisioning: RCTEventEmitter {
 
     static let deviceDisconnectedEventName = "EspIdfProvisioning.deviceDisconnected"
     static let deviceDisconnectedErrorCode = "E_DEVICE_DISCONNECTED"
+    static let bluetoothDisabledErrorCode = "E_BLUETOOTH_DISABLED"
+
+    private let bluetoothStateReader = BluetoothStateReader()
 
     override func supportedEvents() -> [String]! {
         return [EspIdfProvisioning.deviceDisconnectedEventName]
@@ -153,11 +211,35 @@ class EspIdfProvisioning: RCTEventEmitter {
         }
     }
 
+    @objc(getBluetoothState:reject:)
+    func getBluetoothState(resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+        bluetoothStateReader.read { state in
+            resolve(BluetoothStateReader.name(of: state))
+        }
+    }
+
     @objc(searchESPDevices:transport:security:resolve:reject:)
     func searchESPDevices(devicePrefix: String, transport: String, security: Int, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         let transport = ESPTransport(rawValue: transport) ?? ESPTransport.ble
         let security = ESPSecurity(rawValue: security)
 
+        guard transport == .ble else {
+            search(devicePrefix: devicePrefix, transport: transport, security: security, resolve: resolve, reject: reject)
+            return
+        }
+        // A scan with Bluetooth off finds nothing, which would otherwise look like no device nearby
+        bluetoothStateReader.read { state in
+            DispatchQueue.main.async {
+                if state == .poweredOff {
+                    reject(EspIdfProvisioning.bluetoothDisabledErrorCode, "Bluetooth is turned off.", nil)
+                    return
+                }
+                self.search(devicePrefix: devicePrefix, transport: transport, security: security, resolve: resolve, reject: reject)
+            }
+        }
+    }
+
+    private func search(devicePrefix: String, transport: ESPTransport, security: ESPSecurity, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         // Replacing the connected ESPDevice would orphan its session
         endSession()
         self.espDevices.removeAll()

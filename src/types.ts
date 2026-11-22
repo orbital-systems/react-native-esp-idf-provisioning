@@ -21,6 +21,16 @@ export enum ESPWifiAuthMode {
   wpa2Wpa3Psk = 7,
 }
 
+// The phone's Bluetooth radio state. unauthorized is iOS only; Android needs no permission to read it.
+export enum ESPBluetoothState {
+  poweredOn = 'poweredOn',
+  poweredOff = 'poweredOff',
+  unauthorized = 'unauthorized',
+  unsupported = 'unsupported',
+  resetting = 'resetting',
+  unknown = 'unknown',
+}
+
 export interface ESPDeviceInterface {
   name: string;
   security: ESPSecurity;

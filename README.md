@@ -163,6 +163,24 @@ unsubscribe();
 
 SoftAP disconnects are not detected.
 
+### Bluetooth off
+
+A BLE search with the phone's Bluetooth off would find nothing, which looks the same as no device nearby. So `searchESPDevices` over BLE rejects with the error code `E_BLUETOOTH_DISABLED` (exported as `ESP_BLUETOOTH_DISABLED_ERROR`) instead. To check before searching, for example to ask the user to turn Bluetooth on:
+
+```ts
+import {
+  ESPBluetoothState,
+  ESPProvisionManager,
+} from '@orbital-systems/react-native-esp-idf-provisioning';
+
+const state = await ESPProvisionManager.getBluetoothState();
+if (state === ESPBluetoothState.poweredOff) {
+  // Ask the user to turn Bluetooth on
+}
+```
+
+On iOS the first call creates a `CBCentralManager`, which can show the Bluetooth permission prompt, so request permission first. It waits up to 2 seconds for the state to settle and resolves `unknown` if it doesn't. `unauthorized` is iOS only: Android needs no permission to read the state.
+
 ## Why use this library instead of alternatives?
 
 There have been several attempts to create a react-native bridge of Espressif's native libraries.
@@ -194,6 +212,15 @@ enum ESPSecurity {
   unsecure = 0,
   secure = 1,
   secure2 = 2,
+}
+
+enum ESPBluetoothState {
+  poweredOn = 'poweredOn',
+  poweredOff = 'poweredOff',
+  unauthorized = 'unauthorized',
+  unsupported = 'unsupported',
+  resetting = 'resetting',
+  unknown = 'unknown',
 }
 
 enum ESPWifiAuthMode {

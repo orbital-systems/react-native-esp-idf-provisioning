@@ -31,6 +31,7 @@ export interface Spec extends TurboModule {
     security: number
   ): Promise<ESPDeviceInterface[]>;
   stopESPDevicesSearch(): void;
+  getBluetoothState(): Promise<string>;
   createESPDevice(
     deviceName: string,
     transport: string,

@@ -1,6 +1,6 @@
 import { NativeEventEmitter, NativeModules, Platform } from 'react-native';
 import { Buffer } from 'buffer';
-import { ESPSecurity, ESPTransport } from './types';
+import { ESPBluetoothState, ESPSecurity, ESPTransport } from './types';
 import type {
   ESPDeviceInterface,
   ESPWifiList,
@@ -21,6 +21,9 @@ export const ESP_DEVICE_DISCONNECTED_EVENT = 'EspIdfProvisioning.deviceDisconnec
 // Error code requests reject with when the device is not connected or disconnects before
 // responding.
 export const ESP_DEVICE_DISCONNECTED_ERROR = 'E_DEVICE_DISCONNECTED';
+
+// Error code searchESPDevices rejects with over BLE when the phone's Bluetooth is off.
+export const ESP_BLUETOOTH_DISABLED_ERROR = 'E_BLUETOOTH_DISABLED';
 
 // @ts-expect-error
 const isTurboModuleEnabled = global.__turboModuleProxy != null;
@@ -350,7 +353,8 @@ export class ESPProvisionManager {
    * @param devicePrefix The prefix of the device name to search for.
    * @param transport The transport type to use for the device.
    * @param security The security type to use for the device.
-   * @returns A promise that resolves with the list of ESP devices found.
+   * @returns A promise that resolves with the list of ESP devices found. Over BLE it rejects with
+   * ESP_BLUETOOTH_DISABLED_ERROR when the phone's Bluetooth is off.
    */
   static async searchESPDevices(
     devicePrefix: string,
@@ -374,9 +378,27 @@ export class ESPProvisionManager {
   static stopESPDevicesSearch(): void {
     return EspIdfProvisioning.stopESPDevicesSearch();
   }
+
+  /**
+   * Get the phone's Bluetooth radio state, e.g. to ask the user to turn Bluetooth on before
+   * searching. On iOS the first call can show the Bluetooth permission prompt, and waits up to
+   * 2 seconds for the state to settle.
+   * @returns A promise that resolves with the Bluetooth state.
+   */
+  static async getBluetoothState(): Promise<ESPBluetoothState> {
+    const state: string = await EspIdfProvisioning.getBluetoothState();
+    return Object.values(ESPBluetoothState).includes(state as ESPBluetoothState)
+      ? (state as ESPBluetoothState)
+      : ESPBluetoothState.unknown;
+  }
 }
 
-export { ESPSecurity, ESPTransport, ESPWifiAuthMode } from './types';
+export {
+  ESPBluetoothState,
+  ESPSecurity,
+  ESPTransport,
+  ESPWifiAuthMode,
+} from './types';
 export type {
   ESPDeviceInterface,
   ESPWifiList,

@@ -7,6 +7,7 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule
 abstract class EspIdfProvisioningSpec(context: ReactApplicationContext?) : ReactContextBaseJavaModule(context) {
     abstract fun searchESPDevices(devicePrefix: String, transport: String, security: Double, promise: Promise?)
     abstract fun stopESPDevicesSearch()
+    abstract fun getBluetoothState(promise: Promise?)
     abstract fun createESPDevice(deviceName: String, transport: String, security: Double, proofOfPossession: String?, softAPPassword: String?, username: String?, promise: Promise?)
     abstract fun connect(deviceName: String, promise: Promise?)
     abstract fun sendData(deviceName: String, path: String, data: String, promise: Promise?)
