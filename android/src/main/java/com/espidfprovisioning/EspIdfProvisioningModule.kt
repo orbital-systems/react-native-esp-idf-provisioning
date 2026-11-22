@@ -2,6 +2,7 @@ package com.espidfprovisioning
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
@@ -85,6 +86,7 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       const val NAME = "EspIdfProvisioning"
       private const val EVENT_DEVICE_DISCONNECTED_JS = "EspIdfProvisioning.deviceDisconnected"
       private const val E_DEVICE_DISCONNECTED = "E_DEVICE_DISCONNECTED"
+      private const val E_BLUETOOTH_DISABLED = "E_BLUETOOTH_DISABLED"
   }
 
   private val espProvisionManager = ESPProvisionManager.getInstance(context)
@@ -289,6 +291,23 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
     super.invalidate()
   }
 
+  // Needs no runtime permission. Never "unauthorized": that state only exists on iOS.
+  private fun bluetoothState(): String {
+    // Null on devices without Bluetooth
+    val adapter: BluetoothAdapter = bluetoothAdapter ?: return "unsupported"
+    return when (adapter.state) {
+      BluetoothAdapter.STATE_ON -> "poweredOn"
+      BluetoothAdapter.STATE_OFF -> "poweredOff"
+      BluetoothAdapter.STATE_TURNING_ON, BluetoothAdapter.STATE_TURNING_OFF -> "resetting"
+      else -> "unknown"
+    }
+  }
+
+  @ReactMethod
+  override fun getBluetoothState(promise: Promise?) {
+    promise?.resolve(bluetoothState())
+  }
+
   private fun hasBluetoothPermissions(): Boolean {
     if (Build.VERSION.SDK_INT <= 30) {
       return ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED &&
@@ -395,6 +414,12 @@ class EspIdfProvisioningModule internal constructor(context: ReactApplicationCon
       // Permission checks
       if (!hasBluetoothPermissions() || (requiresFineLocationForBleScan() && !hasFineLocationPermission())) {
         safePromise.reject(Error("Missing one of the following permissions: BLUETOOTH, BLUETOOTH_ADMIN, BLUETOOTH_CONNECT, BLUETOOTH_SCAN, ACCESS_FINE_LOCATION"))
+        return
+      }
+
+      // A scan with Bluetooth off finds nothing, which would otherwise look like no device nearby
+      if (bluetoothState() == "poweredOff") {
+        safePromise.reject(E_BLUETOOTH_DISABLED, "Bluetooth is turned off.")
         return
       }
 

@@ -14,6 +14,9 @@
 
     RCT_EXTERN_METHOD(stopESPDevicesSearch)
 
+    RCT_EXTERN_METHOD(getBluetoothState:(RCTPromiseResolveBlock)resolve
+                      reject:(RCTPromiseRejectBlock)reject)
+
     RCT_EXTERN_METHOD(createESPDevice:(NSString *)deviceName
                       transport:(NSString *)transport
                       security:(NSInteger)security

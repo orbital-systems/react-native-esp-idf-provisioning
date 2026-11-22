@@ -1,6 +1,7 @@
 const mockCreateESPDevice = jest.fn().mockResolvedValue({});
 const mockConnect = jest.fn().mockResolvedValue({ status: 'connected' });
 const mockSendData = jest.fn();
+const mockGetBluetoothState = jest.fn();
 const mockListeners = new Map<string, Set<(event: unknown) => void>>();
 const mockNativeEventEmitter = jest.fn();
 
@@ -10,6 +11,7 @@ jest.mock('react-native', () => ({
       createESPDevice: mockCreateESPDevice,
       connect: mockConnect,
       sendData: mockSendData,
+      getBluetoothState: mockGetBluetoothState,
     },
   },
   NativeEventEmitter: jest.fn().mockImplementation((nativeModule) => {
@@ -257,5 +259,38 @@ describe('ESPDevice.onDisconnected', () => {
     emit({ deviceName: 'PROV_A' });
 
     expect(callback).not.toHaveBeenCalled();
+  });
+});
+
+describe('ESPProvisionManager.getBluetoothState', () => {
+  beforeEach(() => mockGetBluetoothState.mockReset());
+
+  it.each([
+    'poweredOn',
+    'poweredOff',
+    'unauthorized',
+    'unsupported',
+    'resetting',
+    'unknown',
+  ])('passes through %s', async (state) => {
+    const { ESPProvisionManager } = require('../index');
+    mockGetBluetoothState.mockResolvedValue(state);
+
+    await expect(ESPProvisionManager.getBluetoothState()).resolves.toBe(state);
+  });
+
+  it('maps a state it does not know to unknown', async () => {
+    const { ESPProvisionManager, ESPBluetoothState } = require('../index');
+    mockGetBluetoothState.mockResolvedValue('somethingNew');
+
+    await expect(ESPProvisionManager.getBluetoothState()).resolves.toBe(
+      ESPBluetoothState.unknown
+    );
+  });
+
+  it('exports the Bluetooth-disabled error code', () => {
+    const { ESP_BLUETOOTH_DISABLED_ERROR } = require('../index');
+
+    expect(ESP_BLUETOOTH_DISABLED_ERROR).toBe('E_BLUETOOTH_DISABLED');
   });
 });
